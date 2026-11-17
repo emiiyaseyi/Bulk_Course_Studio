@@ -177,6 +177,12 @@ class template_parser {
             if ($modname === 'bulkcoursestudio') {
                 $moduledata['embedurl'] = trim((string) ($row['E'] ?? ''));
             }
+            // An Excel row only carries a few fields, so fill in the settings
+            // Moodle's own form would have supplied, for the simple types.
+            $moduledata = array_merge(
+                self::basic_defaults($modname, (string) ($row['D'] ?? ''), trim((string) ($row['E'] ?? ''))),
+                $moduledata
+            );
             if (!empty($row['F'])) {
                 // Local_filename is resolved against the admin's follow-up
                 // file-batch upload, not here — stored as-is for that step
@@ -225,6 +231,42 @@ class template_parser {
         }
 
         return array_values(array_unique($usedcompetencies));
+    }
+
+    /**
+     * Default settings for activity types an Excel row can build reliably.
+     * Any other type (assignment, quiz, forum, SCORM...) is created with
+     * only what the row gives it, flagged so the preview warns the admin to
+     * open it and set it up in the wizard.
+     *
+     * @param string $modname
+     * @param string $description the row's description cell
+     * @param string $link the row's embed_url cell
+     * @return array moduledata defaults
+     */
+    private static function basic_defaults(string $modname, string $description, string $link): array {
+        switch ($modname) {
+            case 'page':
+                return [
+                    'page' => ['text' => $description, 'format' => FORMAT_HTML, 'itemid' => 0],
+                    'display' => 5,
+                    'printheading' => 1,
+                    'printintro' => 0,
+                    'printlastmodified' => 1,
+                ];
+            case 'url':
+                return ['externalurl' => $link, 'display' => 0, 'printintro' => 0];
+            case 'label':
+                return [];
+            case 'resource':
+                return ['files' => 0, 'display' => 0, 'showsize' => 0, 'showtype' => 0, 'showdate' => 0, 'printintro' => 1];
+            case 'folder':
+                return ['files' => 0, 'display' => 0, 'showexpanded' => 1, 'showdownloadfolder' => 1, 'forcedownload' => 1];
+            case 'bulkcoursestudio':
+                return ['mediasource' => 'url', 'autonext' => 1];
+            default:
+                return ['_excelbasic' => 1];
+        }
     }
 
     /**

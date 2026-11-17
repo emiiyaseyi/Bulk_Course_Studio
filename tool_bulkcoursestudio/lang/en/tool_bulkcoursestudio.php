@@ -246,3 +246,8 @@ $string['defaultsectionname'] = 'Section {$a}';
 $string['sectionsadded'] = '{$a} sections were added.';
 $string['rename'] = 'Rename';
 $string['renamed'] = 'Renamed.';
+
+// Added in v1.7.
+$string['fixthis'] = 'Fix this';
+$string['preview:warning:excelbasic'] = 'The {$a->modname} activity "{$a->activity}" in section "{$a->section}" was imported from Excel with default settings only. Open it to set it up properly (dates, grading, files...).';
+$string['excel:supportinfo'] = 'Excel rows are best for simple content: Page, URL, Label, File, Folder and Bulk Course Studio videos. Other types such as Assignment, Quiz, Forum and SCORM are created with default settings only; the preview links to each one so you can set it up.';

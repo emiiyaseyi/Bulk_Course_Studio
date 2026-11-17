@@ -58,35 +58,45 @@ class build_manager {
         $result = (object) [
             'errors' => [],
             'warnings' => [],
+            'fixlinks' => ['errors' => [], 'warnings' => []],
             'tree' => (object) ['course' => $coursedata, 'sections' => []],
         ];
 
+        // Every problem can carry a link straight to the screen that fixes it.
+        $fix = function (string $page, array $extra = []) use ($buildid) {
+            return new \moodle_url('/admin/tool/bulkcoursestudio/' . $page, ['buildid' => $buildid] + $extra);
+        };
+        $issue = function (string $type, string $message, ?\moodle_url $url = null) use ($result) {
+            $result->{$type}[] = $message;
+            $result->fixlinks[$type][count($result->{$type}) - 1] = $url;
+        };
+
         // Non-fatal notes recorded while importing an Excel file.
         foreach ($coursedata['importwarnings'] ?? [] as $importwarning) {
-            $result->warnings[] = $importwarning;
+            $issue('warnings', $importwarning, $fix('step_coursedetails.php'));
         }
 
         // Course-level checks.
         if (empty($coursedata['fullname'])) {
-            $result->errors[] = get_string('preview:error:nofullname', 'tool_bulkcoursestudio');
+            $issue('errors', get_string('preview:error:nofullname', 'tool_bulkcoursestudio'), $fix('step_coursedetails.php'));
         }
 
         $categoryid = $coursedata['category'] ?? 0;
         if (empty($categoryid) || !$DB->record_exists('course_categories', ['id' => $categoryid])) {
-            $result->errors[] = get_string('preview:error:badcategory', 'tool_bulkcoursestudio');
+            $issue('errors', get_string('preview:error:badcategory', 'tool_bulkcoursestudio'), $fix('step_coursedetails.php'));
         }
 
         $installedformats = \core_component::get_plugin_list('format');
         $format = $coursedata['format'] ?? '';
         if ($format === '' || !isset($installedformats[$format])) {
-            $result->errors[] = get_string('preview:error:badformat', 'tool_bulkcoursestudio', $format);
+            $issue('errors', get_string('preview:error:badformat', 'tool_bulkcoursestudio', $format), $fix('step_format.php'));
         }
 
         if (
             !empty($coursedata['startdate']) && !empty($coursedata['enddate'])
                 && $coursedata['enddate'] <= $coursedata['startdate']
         ) {
-            $result->errors[] = get_string('preview:error:enddatebeforestart', 'tool_bulkcoursestudio');
+            $issue('errors', get_string('preview:error:enddatebeforestart', 'tool_bulkcoursestudio'), $fix('step_coursedetails.php'));
         }
 
         // Sections and activities.
@@ -114,32 +124,56 @@ class build_manager {
                 ];
 
                 if (!isset($installedmods[$activity->modname])) {
-                    $result->errors[] = get_string(
+                    $issue('errors', get_string(
                         'preview:error:unknownmod',
                         'tool_bulkcoursestudio',
                         (object) ['section' => $section->name, 'modname' => $activity->modname]
-                    );
+                    ), $fix('step_activities.php'));
                 } else if (!\core_plugin_manager::instance()->get_plugin_info('mod_' . $activity->modname)->is_enabled()) {
-                    $result->warnings[] = get_string(
+                    $issue('warnings', get_string(
                         'preview:warning:disabledmod',
                         'tool_bulkcoursestudio',
                         (object) ['section' => $section->name, 'modname' => $activity->modname]
-                    );
+                    ), $fix('step_activities.php'));
                 }
 
-                if ($activity->modname === 'bulkcoursestudio') {
+                if ($activity->modname === 'bulkcoursestudio' && class_exists('\\mod_bulkcoursestudio\\embed_resolver')) {
                     $moduledata = json_decode($activity->moduledata, true) ?? [];
-                    $url = $moduledata['embedurl'] ?? '';
-                    $provider = class_exists('\\mod_bulkcoursestudio\\embed_resolver')
-                        ? \mod_bulkcoursestudio\embed_resolver::detect_provider($url)
-                        : '';
-                    if ($provider === '') {
-                        $result->errors[] = get_string(
+                    $source = $moduledata['mediasource'] ?? 'url';
+                    $url = \mod_bulkcoursestudio\embed_resolver::extract_url((string) ($moduledata['embedurl'] ?? ''));
+                    // An uploaded video needs no link; a direct link must point at a
+                    // video file; any other link must be a recognised provider.
+                    if ($source === 'upload') {
+                        $linkok = true;
+                    } else if ($source === 'direct') {
+                        $linkok = \mod_bulkcoursestudio\embed_resolver::is_direct_video_url($url);
+                    } else if ($source === 'import') {
+                        $linkok = (bool) preg_match('#^https?://#i', $url);
+                    } else {
+                        $linkok = class_exists('\\mod_bulkcoursestudio\\embed_resolver')
+                            && \mod_bulkcoursestudio\embed_resolver::detect_provider($url) !== '';
+                    }
+                    if (!$linkok) {
+                        $issue('errors', get_string(
                             'preview:error:badembedurl',
                             'tool_bulkcoursestudio',
                             (object) ['section' => $section->name, 'activity' => $activity->name]
-                        );
+                        ), $fix('step_activity_settings.php', [
+                            'sectionid' => $section->id, 'modname' => $activity->modname, 'activityid' => $activity->id,
+                        ]));
                     }
+                }
+
+                $basicdata = json_decode($activity->moduledata, true) ?? [];
+                if (!empty($basicdata['_excelbasic'])) {
+                    // Came from Excel with no real settings yet (see template_parser).
+                    $issue('warnings', get_string(
+                        'preview:warning:excelbasic',
+                        'tool_bulkcoursestudio',
+                        (object) ['section' => $section->name, 'activity' => $activity->name, 'modname' => $activity->modname]
+                    ), $fix('step_activity_settings.php', [
+                        'sectionid' => $section->id, 'modname' => $activity->modname, 'activityid' => $activity->id,
+                    ]));
                 }
 
                 if (in_array($activity->modname, ['resource', 'folder'], true)) {
@@ -161,11 +195,11 @@ class build_manager {
                             false
                         );
                         if (empty($storedfiles)) {
-                            $result->warnings[] = get_string(
+                            $issue('warnings', get_string(
                                 'preview:warning:missingfile',
                                 'tool_bulkcoursestudio',
                                 (object) ['section' => $section->name, 'activity' => $activity->name, 'filename' => $expectedfile]
-                            );
+                            ), $fix('step_matchfiles.php'));
                         }
                     }
                 }
@@ -177,7 +211,7 @@ class build_manager {
         }
 
         if (empty($sections)) {
-            $result->warnings[] = get_string('preview:warning:nosections', 'tool_bulkcoursestudio');
+            $issue('warnings', get_string('preview:warning:nosections', 'tool_bulkcoursestudio'), $fix('step_sections.php'));
         }
 
         return $result;

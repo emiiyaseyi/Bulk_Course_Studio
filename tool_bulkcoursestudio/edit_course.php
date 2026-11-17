@@ -55,7 +55,7 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('editexisting', 'tool_bulkcoursestudio'));
 echo $OUTPUT->notification(get_string('editexisting:info', 'tool_bulkcoursestudio'), 'info');
 
-echo html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url, 'class' => 'form-inline mb-3']);
+echo html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url->out(false), 'class' => 'form-inline mb-3']);
 echo html_writer::empty_tag('input', [
     'type' => 'text',
     'name' => 'search',

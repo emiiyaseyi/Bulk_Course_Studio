@@ -80,6 +80,17 @@ if (!native_form_registry::uses_native_form($modname)) {
 }
 
 if (empty($build->courseid)) {
+    // An Excel build has no real course until it is committed; create the
+    // (hidden) course now so this activity's real settings form can open.
+    try {
+        build_manager::sync($buildid);
+        $build = draft_repository::get_build($buildid);
+    } catch (\Throwable $e) {
+        debugging('Could not create the course for this build: ' . $e->getMessage(), DEBUG_DEVELOPER);
+    }
+}
+
+if (empty($build->courseid)) {
     // Shouldn't happen in normal use — course details is always step 1,
     // and it syncs a real course immediately — but guard against a
     // directly-typed URL on a build that somehow skipped that step.
@@ -118,7 +129,8 @@ if ($cm) {
     // course/modedit.php itself calls, so $data arrives in exactly the
     // shape that module's own mod_form expects.
     [$cm, $context, $module, $data, $cw] = get_moduleinfo_data($cm, $course);
-    $PAGE->set_cm($cm, $course);
+    // Not $PAGE->set_cm(): the page theme is already set up, and changing the
+    // course now throws. $COURSE and the page context were set above.
 } else {
     // Brand new activity — can_add_moduleinfo() only hands back
     // module/context/cw; modedit.php builds $data itself from there for

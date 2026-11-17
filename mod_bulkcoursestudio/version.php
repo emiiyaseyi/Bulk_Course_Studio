@@ -25,8 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_bulkcoursestudio';
-$plugin->version   = 2026111706; // YYYYMMDDXX.
+$plugin->version   = 2026111707; // YYYYMMDDXX.
 $plugin->requires  = 2024100700; // Moodle 4.5.0 build.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = 'v1.6';
+$plugin->release   = 'v1.7';
 $plugin->cron      = 0;

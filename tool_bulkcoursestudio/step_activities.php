@@ -88,7 +88,7 @@ if ($removeid) {
             new moodle_url($thisurl, ['remove' => $removeid, 'choice' => 'hide', 'sesskey' => sesskey()]),
             get_string('hideactivity', 'tool_bulkcoursestudio'),
             'post',
-            single_button::BUTTON_PRIMARY
+            ['type' => single_button::BUTTON_PRIMARY]
         ),
         'mb-4'
     );
@@ -100,7 +100,7 @@ if ($removeid) {
                 new moodle_url($thisurl, ['remove' => $removeid, 'choice' => 'delete', 'sesskey' => sesskey()]),
                 get_string('removeactivity', 'tool_bulkcoursestudio'),
                 'post',
-                single_button::BUTTON_DANGER
+                ['type' => single_button::BUTTON_DANGER]
             ),
             'mb-4'
         );
@@ -155,6 +155,15 @@ echo $OUTPUT->header();
 if ($choosesection) {
     if (!isset($sections[$choosesection])) {
         throw new moodle_exception('invalidrecord', 'error');
+    }
+    if (empty($build->courseid)) {
+        // Excel builds have no real course yet; create the hidden one now.
+        try {
+            \tool_bulkcoursestudio\build_manager::sync($buildid);
+            $build = draft_repository::get_build($buildid);
+        } catch (\Throwable $e) {
+            debugging('Could not create the course for this build: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
     }
     if (empty($build->courseid)) {
         redirect(new moodle_url('/admin/tool/bulkcoursestudio/step_coursedetails.php', ['buildid' => $buildid]));

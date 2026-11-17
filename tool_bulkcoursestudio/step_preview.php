@@ -48,12 +48,19 @@ echo $OUTPUT->header();
 echo ui::begin('preview', (int) $buildid, get_string('step:preview', 'tool_bulkcoursestudio'),
     get_string('stepsub:preview', 'tool_bulkcoursestudio'));
 
-foreach ($preview->errors as $error) {
-    echo $OUTPUT->notification($error, 'error');
-}
-foreach ($preview->warnings as $warning) {
-    echo $OUTPUT->notification($warning, 'warning');
-}
+$renderissue = function (string $type, string $level) use ($preview, $OUTPUT) {
+    foreach ($preview->{$type} as $index => $message) {
+        $url = $preview->fixlinks[$type][$index] ?? null;
+        $link = $url ? ' ' . html_writer::link(
+            $url,
+            get_string('fixthis', 'tool_bulkcoursestudio'),
+            ['class' => 'btn btn-sm btn-primary ms-2 ml-2']
+        ) : '';
+        echo $OUTPUT->notification(s($message) . $link, $level);
+    }
+};
+$renderissue('errors', 'error');
+$renderissue('warnings', 'warning');
 
 echo $OUTPUT->heading(format_string($preview->tree->course['fullname'] ?? ''), 3);
 

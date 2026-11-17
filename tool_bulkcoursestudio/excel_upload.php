@@ -49,9 +49,11 @@ if ($form->is_cancelled()) {
 
     try {
         $buildid = template_parser::parse($filepath);
-    } catch (\moodle_exception $e) {
+    } catch (\Throwable $e) {
+        // A structural problem (missing sheet, unreadable file...): say so
+        // here instead of showing a server error.
         echo $OUTPUT->header();
-        echo $OUTPUT->notification($e->getMessage(), 'error');
+        echo $OUTPUT->notification(s($e->getMessage()), 'error');
         $form->display();
         echo $OUTPUT->footer();
         exit;
@@ -63,5 +65,6 @@ if ($form->is_cancelled()) {
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('uploadtemplate', 'tool_bulkcoursestudio'));
 echo $OUTPUT->notification(get_string('excel:filematchinfo', 'tool_bulkcoursestudio'), 'info');
+echo $OUTPUT->notification(get_string('excel:supportinfo', 'tool_bulkcoursestudio'), 'info');
 $form->display();
 echo $OUTPUT->footer();

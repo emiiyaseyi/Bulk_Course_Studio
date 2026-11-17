@@ -85,13 +85,13 @@ class template_generator {
         // enough guidance without making the cell unusable for an admin
         // who prefers to type.
         $installedformats = implode(', ', array_keys(\core_component::get_plugin_list('format')));
-        $sheet->getCell('E1')->getComment()->getText()->createTextRun('Installed formats: ' . $installedformats);
-        $sheet->getCell('C1')->getComment()->getText()->createTextRun(
+        $sheet->getComment('E1')->getText()->createTextRun('Installed formats: ' . $installedformats);
+        $sheet->getComment('C1')->getText()->createTextRun(
             'Full path, e.g. "Science / Physics". Must already exist — categories are not created from this file.'
         );
 
-        $sheet->getCell('I1')->getComment()->getText()->createTextRun('Course tags, separated by commas.');
-        $sheet->getCell('J1')->getComment()->getText()->createTextRun(
+        $sheet->getComment('I1')->getText()->createTextRun('Course tags, separated by commas.');
+        $sheet->getComment('J1')->getText()->createTextRun(
             'Competency short names or ID numbers, separated by commas. Needs the competencies feature on.'
         );
 
@@ -112,7 +112,7 @@ class template_generator {
         $sheet->fromArray($headers, null, 'A1');
         $sheet->fromArray(['1', 'Introduction', 'Welcome and course overview.'], null, 'A2');
 
-        $sheet->getCell('A1')->getComment()->getText()->createTextRun(
+        $sheet->getComment('A1')->getText()->createTextRun(
             'Start at 1. Referenced by the Activities sheet\'s section_number column.'
         );
 
@@ -145,10 +145,10 @@ class template_generator {
                 $installedmods[] = $plugin->name;
             }
         }
-        $sheet->getCell('B1')->getComment()->getText()->createTextRun('Installed activity types: ' . implode(', ', $installedmods));
+        $sheet->getComment('B1')->getText()->createTextRun('Installed activity types: ' . implode(', ', $installedmods));
         $filenamehelp = 'For File/Folder activities only. Matched by exact filename against the batch of '
             . 'files uploaded on the screen after this template is re-uploaded — see the plugin README / spec §3.2.';
-        $sheet->getCell('F1')->getComment()->getText()->createTextRun($filenamehelp);
+        $sheet->getComment('F1')->getText()->createTextRun($filenamehelp);
 
         $notes = [
             'H1' => 'Visible to learners: 1 = yes (default), 0 = hidden.',
@@ -161,7 +161,7 @@ class template_generator {
             'N1' => 'With completion = percent: the percentage of the video (1-100) the learner must watch.',
         ];
         foreach ($notes as $cell => $note) {
-            $sheet->getCell($cell)->getComment()->getText()->createTextRun($note);
+            $sheet->getComment($cell)->getText()->createTextRun($note);
         }
 
         foreach (range('A', 'O') as $col) {

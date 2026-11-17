@@ -49,7 +49,7 @@ $PAGE->set_title(get_string('step:commit', 'tool_bulkcoursestudio'));
 if ($mode === 'schedule' && !optional_param('scheduledtimestr', '', PARAM_RAW)) {
     echo $OUTPUT->header();
     echo $OUTPUT->heading(get_string('schedulelater', 'tool_bulkcoursestudio'));
-    echo html_writer::start_tag('form', ['method' => 'post', 'action' => $PAGE->url]);
+    echo html_writer::start_tag('form', ['method' => 'post', 'action' => $PAGE->url->out(false)]);
     echo html_writer::input_hidden_params($PAGE->url);
     echo html_writer::input_hidden_params(new moodle_url('', ['sesskey' => sesskey()]));
     echo html_writer::empty_tag('input', [
