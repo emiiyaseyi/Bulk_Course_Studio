@@ -190,7 +190,7 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
         $errors = parent::validation($data, $files);
         if (isset($data['embedurl'])) {
             // Accept a whole pasted <iframe> embed code as well as a plain link.
-            $data['embedurl'] = mod_bulkcoursestudioembed_resolver::extract_url($data['embedurl']);
+            $data['embedurl'] = \mod_bulkcoursestudio\embed_resolver::extract_url($data['embedurl']);
         }
         $suffix = $this->get_suffix();
         $source = $data['mediasource'] ?? 'url';

@@ -84,11 +84,11 @@ function bulkcoursestudio_prepare_media_fields(stdClass $data): void {
         $data->provider = 'upload';
     } else if ($source === 'direct') {
         $data->mediasource = 'direct';
-        $data->embedurl = mod_bulkcoursestudioembed_resolver::extract_url($data->embedurl ?? '');
+        $data->embedurl = \mod_bulkcoursestudio\embed_resolver::extract_url($data->embedurl ?? '');
         $data->provider = 'direct';
     } else {
         $data->mediasource = 'url';
-        $data->embedurl = mod_bulkcoursestudioembed_resolver::extract_url($data->embedurl ?? '');
+        $data->embedurl = \mod_bulkcoursestudio\embed_resolver::extract_url($data->embedurl ?? '');
         $data->provider = \mod_bulkcoursestudio\embed_resolver::detect_provider($data->embedurl);
     }
     $data->completionpercent = (int) ($data->completionpercent ?? 0);
