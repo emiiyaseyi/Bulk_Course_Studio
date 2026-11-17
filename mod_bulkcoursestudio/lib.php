@@ -77,15 +77,22 @@ function bulkcoursestudio_add_instance(stdClass $data, $mform = null): int {
  * @param stdClass $data form data being saved
  */
 function bulkcoursestudio_prepare_media_fields(stdClass $data): void {
-    if (($data->mediasource ?? 'url') === 'upload') {
+    $source = $data->mediasource ?? 'url';
+    if ($source === 'upload') {
         $data->mediasource = 'upload';
         $data->embedurl = '';
         $data->provider = 'upload';
+    } else if ($source === 'direct') {
+        $data->mediasource = 'direct';
+        $data->embedurl = $data->embedurl ?? '';
+        $data->provider = 'direct';
     } else {
         $data->mediasource = 'url';
         $data->embedurl = $data->embedurl ?? '';
         $data->provider = \mod_bulkcoursestudio\embed_resolver::detect_provider($data->embedurl);
     }
+    $data->completionpercent = (int) ($data->completionpercent ?? 0);
+    $data->autonext = empty($data->autonext) ? 0 : 1;
 }
 
 /**
@@ -114,6 +121,16 @@ function bulkcoursestudio_save_files(stdClass $data): void {
             // Switched to a pasted link: don't keep an orphaned video file.
             get_file_storage()->delete_area_files($context->id, 'mod_bulkcoursestudio', 'mediafile', 0);
         }
+    }
+    if (isset($data->transcript)) {
+        file_save_draft_area_files(
+            $data->transcript,
+            $context->id,
+            'mod_bulkcoursestudio',
+            'transcript',
+            0,
+            ['subdirs' => 0, 'maxfiles' => 1]
+        );
     }
     if (isset($data->resources)) {
         file_save_draft_area_files(
@@ -215,16 +232,33 @@ function bulkcoursestudio_reset_course_form_defaults(stdClass $course): array {
 }
 
 /**
- * Completion rule description shown on the activity's settings form,
- * when "minimum seconds watched" is used instead of/alongside view-based
- * completion.
+ * Extra course-page info for the activity, including the custom completion
+ * rule so Moodle's completion system can read it.
+ *
+ * @param stdClass $coursemodule
+ * @return cached_cm_info|false
  */
-function bulkcoursestudio_get_completion_active_rule_descriptions($cm): array {
-    if (empty($cm->customdata['customcompletionrules']['completionminseconds'])) {
-        return [];
+function bulkcoursestudio_get_coursemodule_info($coursemodule) {
+    global $DB;
+
+    $instance = $DB->get_record(
+        'bulkcoursestudio',
+        ['id' => $coursemodule->instance],
+        'id, name, intro, introformat, completionpercent'
+    );
+    if (!$instance) {
+        return false;
     }
-    $seconds = $cm->customdata['customcompletionrules']['completionminseconds'];
-    return [get_string('completiondetail:minseconds', 'mod_bulkcoursestudio', $seconds)];
+
+    $info = new cached_cm_info();
+    $info->name = $instance->name;
+    if ($coursemodule->showdescription) {
+        $info->content = format_module_intro('bulkcoursestudio', $instance, $coursemodule->id, false);
+    }
+    if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
+        $info->customdata['customcompletionrules']['completionpercent'] = (int) $instance->completionpercent;
+    }
+    return $info;
 }
 
 /**

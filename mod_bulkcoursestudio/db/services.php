@@ -28,8 +28,8 @@ $functions = [
     'mod_bulkcoursestudio_report_progress' => [
         'classname' => 'mod_bulkcoursestudio\external\report_progress',
         'methodname' => 'execute',
-        'description' => 'Report how many seconds of an embedded video the current user has watched, and mark '
-            . 'completion when the modal is closed or the required watch time is reached.',
+        'description' => 'Save how far the current user has watched a video (position and percentage), and mark '
+            . 'completion when the required watch percentage is reached.',
         'type' => 'write',
         'ajax' => true,
         'loginrequired' => true,

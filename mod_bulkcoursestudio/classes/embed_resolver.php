@@ -38,6 +38,21 @@ class embed_resolver {
     const PROVIDER_GDRIVE = 'gdrive';
     /** @var string OneDrive provider identifier. */
     const PROVIDER_ONEDRIVE = 'onedrive';
+    /** @var string Loom provider identifier. */
+    const PROVIDER_LOOM = 'loom';
+
+    /**
+     * Whether watch progress (and so percentage completion) can be tracked
+     * for a provider. YouTube and Vimeo expose their player position to the
+     * page; Google Drive, OneDrive and Loom do not, and uploaded or direct
+     * video files are tracked through the browser's own video element.
+     *
+     * @param string $provider a PROVIDER_* constant, 'upload', 'direct' or ''
+     * @return bool
+     */
+    public static function supports_progress(string $provider): bool {
+        return in_array($provider, [self::PROVIDER_YOUTUBE, self::PROVIDER_VIMEO, 'upload', 'direct'], true);
+    }
 
     /**
      * Identify which known provider a pasted URL belongs to.
@@ -54,6 +69,9 @@ class embed_resolver {
         }
         if (preg_match('#^https?://(www\.)?vimeo\.com/#i', $url)) {
             return self::PROVIDER_VIMEO;
+        }
+        if (preg_match('#^https?://(www\.)?loom\.com/#i', $url)) {
+            return self::PROVIDER_LOOM;
         }
         if (preg_match('#^https?://(drive|docs)\.google\.com/#i', $url)) {
             return self::PROVIDER_GDRIVE;
@@ -87,6 +105,8 @@ class embed_resolver {
                 return self::gdrive_embed_src($url);
             case self::PROVIDER_ONEDRIVE:
                 return self::onedrive_embed_src($url);
+            case self::PROVIDER_LOOM:
+                return self::loom_embed_src($url);
             default:
                 return '';
         }
@@ -176,6 +196,32 @@ class embed_resolver {
             return $url;
         }
         return '';
+    }
+
+    /**
+     * loom.com/share/{id} and loom.com/embed/{id} both resolve to the
+     * documented embed form, rebuilt from the captured id.
+     */
+    private static function loom_embed_src(string $url): string {
+        if (!preg_match('#loom\.com/(?:share|embed)/([A-Za-z0-9]+)#i', $url, $m)) {
+            return '';
+        }
+        return 'https://www.loom.com/embed/' . $m[1];
+    }
+
+    /**
+     * Whether a URL is a direct link to a video file (for example
+     * https://example.com/lesson.mp4) that the browser can play itself.
+     *
+     * @param string $url
+     * @return bool
+     */
+    public static function is_direct_video_url(string $url): bool {
+        if (!preg_match('#^https?://#i', $url) || strpbrk($url, "\"'<> ") !== false) {
+            return false;
+        }
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        return (bool) preg_match('#\.(mp4|webm|m4v|mov|3gp|ogv)$#i', $path);
     }
 
     /**

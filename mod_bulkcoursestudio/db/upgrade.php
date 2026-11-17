@@ -44,5 +44,34 @@ function xmldb_bulkcoursestudio_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026111701, 'bulkcoursestudio');
     }
 
+    if ($oldversion < 2026111703) {
+        // Percentage completion, auto-advance, and richer progress tracking.
+        $table = new xmldb_table('bulkcoursestudio');
+        $fields = [
+            new xmldb_field('completionpercent', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, null, '0', 'completionminseconds'),
+            new xmldb_field('autonext', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'completionpercent'),
+        ];
+        foreach ($fields as $field) {
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        $table = new xmldb_table('bulkcoursestudio_progress');
+        $fields = [
+            new xmldb_field('currenttime', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'secondswatched'),
+            new xmldb_field('duration', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'currenttime'),
+            new xmldb_field('watchpercent', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, null, '0', 'duration'),
+            new xmldb_field('provider', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'watchpercent'),
+        ];
+        foreach ($fields as $field) {
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        upgrade_mod_savepoint(true, 2026111703, 'bulkcoursestudio');
+    }
+
     return true;
 }

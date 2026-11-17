@@ -90,5 +90,6 @@ class restore_bulkcoursestudio_activity_structure_step extends restore_activity_
         $this->add_related_files('mod_bulkcoursestudio', 'intro', null);
         $this->add_related_files('mod_bulkcoursestudio', 'mediafile', null);
         $this->add_related_files('mod_bulkcoursestudio', 'resources', null);
+        $this->add_related_files('mod_bulkcoursestudio', 'transcript', null);
     }
 }

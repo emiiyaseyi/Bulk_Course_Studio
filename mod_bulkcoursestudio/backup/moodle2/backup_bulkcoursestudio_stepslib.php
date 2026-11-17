@@ -41,12 +41,12 @@ class backup_bulkcoursestudio_activity_structure_step extends backup_activity_st
 
         $bulkcoursestudio = new backup_nested_element('bulkcoursestudio', ['id'], [
             'name', 'intro', 'introformat', 'embedurl', 'provider', 'mediasource',
-            'completionview', 'completionminseconds', 'timecreated', 'timemodified',
+            'completionview', 'completionminseconds', 'completionpercent', 'autonext', 'timecreated', 'timemodified',
         ]);
 
         $progresses = new backup_nested_element('progresses');
         $progress = new backup_nested_element('progress', ['id'], [
-            'userid', 'secondswatched', 'timemodified',
+            'userid', 'secondswatched', 'currenttime', 'duration', 'watchpercent', 'provider', 'timemodified',
         ]);
 
         $bulkcoursestudio->add_child($progresses);
@@ -62,6 +62,7 @@ class backup_bulkcoursestudio_activity_structure_step extends backup_activity_st
         $bulkcoursestudio->annotate_files('mod_bulkcoursestudio', 'intro', null);
         $bulkcoursestudio->annotate_files('mod_bulkcoursestudio', 'mediafile', null);
         $bulkcoursestudio->annotate_files('mod_bulkcoursestudio', 'resources', null);
+        $bulkcoursestudio->annotate_files('mod_bulkcoursestudio', 'transcript', null);
 
         return $this->prepare_activity_structure($bulkcoursestudio);
     }

@@ -29,11 +29,9 @@ use context_module;
 use completion_info;
 
 /**
- * AJAX endpoint called from amd/src/launcher.js while the pop-up player is
- * open (throttled, e.g. every ~10s) and once when the modal closes. Persists
- * the user's furthest-watched point and, once the configured
- * completionminseconds threshold is met, marks the activity complete via the
- * core completion API — never by writing to the completion tables directly.
+ * AJAX endpoint the video player calls to save how far a learner has
+ * watched, and to mark the activity complete once the required percentage
+ * is reached.
  *
  * @package    mod_bulkcoursestudio
  * @copyright  2026 Bulk Course Studio
@@ -41,31 +39,39 @@ use completion_info;
  */
 class report_progress extends external_api {
     /**
-     * Describe this external function's parameters.
+     * Parameter definition.
      *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'cmid' => new external_value(PARAM_INT, 'Course module id'),
-            'secondswatched' => new external_value(PARAM_INT, 'Furthest playback position reached, in seconds'),
+            'currenttime' => new external_value(PARAM_INT, 'Current playback position in seconds'),
+            'duration' => new external_value(PARAM_INT, 'Video length in seconds'),
+            'percent' => new external_value(PARAM_INT, 'Furthest point reached, as a percentage'),
+            'provider' => new external_value(PARAM_ALPHANUMEXT, 'html5, youtube or vimeo', VALUE_DEFAULT, ''),
         ]);
     }
 
     /**
-     * Record the user's furthest playback position and, once the
-     * configured threshold is met, mark the activity complete.
+     * Save progress for the current user.
      *
      * @param int $cmid
-     * @param int $secondswatched
+     * @param int $currenttime
+     * @param int $duration
+     * @param int $percent
+     * @param string $provider
      * @return array
      */
-    public static function execute(int $cmid, int $secondswatched): array {
+    public static function execute(int $cmid, int $currenttime, int $duration, int $percent, string $provider = ''): array {
         global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
-            'secondswatched' => $secondswatched,
+            'currenttime' => $currenttime,
+            'duration' => $duration,
+            'percent' => $percent,
+            'provider' => $provider,
         ]);
 
         $cm = get_coursemodule_from_id('bulkcoursestudio', $params['cmid'], 0, false, MUST_EXIST);
@@ -75,55 +81,55 @@ class report_progress extends external_api {
 
         $instance = $DB->get_record('bulkcoursestudio', ['id' => $cm->instance], '*', MUST_EXIST);
 
+        $currenttime = max(0, $params['currenttime']);
+        $duration = max(0, $params['duration']);
+        $percent = min(100, max(0, $params['percent']));
+
         $existing = $DB->get_record('bulkcoursestudio_progress', [
             'bulkcoursestudioid' => $instance->id,
             'userid' => $USER->id,
         ]);
 
-        // Only ever move forward — a user skipping back in the player
-        // should not reset their recorded progress.
-        $furthest = max($params['secondswatched'], $existing->secondswatched ?? 0);
+        // Progress only moves forward: skipping back in the player must not
+        // lower what the learner has already earned.
+        $furthest = max($percent, (int) ($existing->watchpercent ?? 0));
 
+        $row = (object) [
+            'bulkcoursestudioid' => $instance->id,
+            'userid' => $USER->id,
+            'secondswatched' => max($currenttime, (int) ($existing->secondswatched ?? 0)),
+            'currenttime' => $currenttime,
+            'duration' => $duration,
+            'watchpercent' => $furthest,
+            'provider' => $params['provider'],
+            'timemodified' => time(),
+        ];
         if ($existing) {
-            $DB->update_record('bulkcoursestudio_progress', (object) [
-                'id' => $existing->id,
-                'secondswatched' => $furthest,
-                'timemodified' => time(),
-            ]);
+            $row->id = $existing->id;
+            $DB->update_record('bulkcoursestudio_progress', $row);
         } else {
-            $DB->insert_record('bulkcoursestudio_progress', (object) [
-                'bulkcoursestudioid' => $instance->id,
-                'userid' => $USER->id,
-                'secondswatched' => $furthest,
-                'timemodified' => time(),
-            ]);
+            $DB->insert_record('bulkcoursestudio_progress', $row);
         }
 
         $completed = false;
-        $course = get_course($cm->course);
-        $completioninfo = new completion_info($course);
-
-        if ($completioninfo->is_enabled($cm) && !empty($instance->completionminseconds)) {
-            if ($furthest >= $instance->completionminseconds) {
-                $completioninfo->update_state($cm, COMPLETION_COMPLETE, $USER->id);
-                $completed = true;
-            }
+        $required = (int) $instance->completionpercent;
+        $completioninfo = new completion_info(get_course($cm->course));
+        if ($required > 0 && $completioninfo->is_enabled($cm) && $furthest >= $required) {
+            $completioninfo->update_state($cm, COMPLETION_COMPLETE, $USER->id);
+            $completed = true;
         }
 
-        return [
-            'secondswatched' => $furthest,
-            'completiontriggered' => $completed,
-        ];
+        return ['percent' => $furthest, 'completiontriggered' => $completed];
     }
 
     /**
-     * Describe this external function's return structure.
+     * Return definition.
      *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'secondswatched' => new external_value(PARAM_INT, 'Stored furthest playback position, in seconds'),
+            'percent' => new external_value(PARAM_INT, 'Stored furthest percentage watched'),
             'completiontriggered' => new external_value(PARAM_BOOL, 'Whether this call just marked the activity complete'),
         ]);
     }

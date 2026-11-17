@@ -130,7 +130,7 @@ class template_generator {
         $sheet->setTitle('Activities');
 
         $headers = ['section_number', 'activity_type', 'name', 'description', 'embed_url', 'local_filename', 'completion_view',
-            'visible', 'tags', 'competencies', 'available_from', 'available_until', 'completion', 'completion_min_seconds'];
+            'visible', 'tags', 'competencies', 'available_from', 'available_until', 'completion', 'completion_percent'];
         $sheet->fromArray($headers, null, 'A1');
         $examplerow = [
             '1', 'bulkcoursestudio', 'Welcome video', 'Watch before starting.',
@@ -156,8 +156,8 @@ class template_generator {
             'J1' => 'Competency short names or ID numbers, separated by commas. They are also linked to the course.',
             'K1' => 'Restrict access: the activity opens on this date (YYYY-MM-DD). Leave blank for no restriction.',
             'L1' => 'Restrict access: the activity closes on this date (YYYY-MM-DD). Leave blank for no restriction.',
-            'M1' => 'Completion: none, manual (learner ticks it), view (marked when opened), or minseconds (Bulk Course Studio embed only).',
-            'N1' => 'With completion = minseconds: seconds the learner must watch.',
+            'M1' => 'Completion: none, manual (learner ticks it), view (marked when opened), or percent (Bulk Course Studio embed only).',
+            'N1' => 'With completion = percent: the percentage of the video (1-100) the learner must watch.',
         ];
         foreach ($notes as $cell => $note) {
             $sheet->getCell($cell)->getComment()->getText()->createTextRun($note);

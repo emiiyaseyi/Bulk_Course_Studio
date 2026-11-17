@@ -342,3 +342,192 @@
     color: var(--bcs-muted);
     margin-bottom: 1rem;
 }
+
+/* ---------- Overview page ---------- */
+.bcs-overview .bcs-ov-hero {
+    background: linear-gradient(135deg, #0f1d2e 0%, #1f4a35 100%);
+    color: #fff;
+    border-radius: 18px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+.bcs-overview .bcs-ov-hero::after {
+    content: "";
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.07);
+}
+.bcs-overview .bcs-ov-pill {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    padding: 0.3rem 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.bcs-overview .bcs-ov-title {
+    margin: 0.9rem 0 0.4rem;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #fff;
+}
+.bcs-overview .bcs-ov-tagline {
+    max-width: 640px;
+    margin: 0 0 1.2rem;
+    font-size: 1.05rem;
+    opacity: 0.9;
+}
+.bcs-overview .bcs-ov-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 1.6rem;
+    position: relative;
+    z-index: 1;
+}
+.bcs-overview .bcs-ov-btn {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    padding: 0.6rem 1.1rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+.bcs-overview .bcs-ov-btn:hover {
+    background: rgba(255, 255, 255, 0.24);
+    color: #fff;
+    text-decoration: none;
+}
+.bcs-overview .bcs-ov-btn.is-light {
+    background: #fff;
+    color: #0f1d2e;
+    border-color: #fff;
+}
+.bcs-overview .bcs-ov-btn.is-light:hover {
+    background: #eef3f0;
+    color: #0f1d2e;
+}
+.bcs-overview .bcs-ov-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2.2rem;
+}
+.bcs-overview .bcs-ov-stat-value {
+    font-size: 1.9rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+.bcs-overview .bcs-ov-stat-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+.bcs-overview .bcs-ov-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.bcs-overview .bcs-ov-card {
+    background: #fff;
+    border: 1px solid var(--bcs-border);
+    border-radius: var(--bcs-radius);
+    padding: 1.25rem;
+}
+.bcs-overview .bcs-ov-icon {
+    font-size: 1.7rem;
+    margin-bottom: 0.6rem;
+}
+.bcs-overview .bcs-ov-card-title {
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+.bcs-overview .bcs-ov-card-text {
+    color: var(--bcs-muted);
+    font-size: 0.9rem;
+}
+.bcs-overview .bcs-ov-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+.bcs-overview .bcs-ov-navcard {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1rem 1.1rem;
+    background: #fff;
+    border: 1px solid var(--bcs-border);
+    border-radius: var(--bcs-radius);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.bcs-overview .bcs-ov-navcard:hover {
+    border-color: var(--bcs-primary);
+    box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
+    text-decoration: none;
+    color: inherit;
+}
+.bcs-overview .bcs-ov-nav-icon {
+    font-size: 1.4rem;
+}
+.bcs-overview .bcs-ov-nav-body {
+    flex: 1 1 auto;
+}
+.bcs-overview .bcs-ov-nav-title {
+    font-weight: 700;
+}
+.bcs-overview .bcs-ov-nav-text {
+    color: var(--bcs-muted);
+    font-size: 0.85rem;
+}
+.bcs-overview .bcs-ov-nav-arrow {
+    color: var(--bcs-muted);
+}
+.bcs-overview .bcs-ov-dev {
+    max-width: 520px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid var(--bcs-border);
+    border-radius: var(--bcs-radius);
+    padding: 1.5rem;
+    text-align: center;
+}
+.bcs-overview .bcs-ov-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    margin: 0 auto 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f1d2e, #1f4a35);
+    color: #fff;
+    font-weight: 800;
+    font-size: 1.4rem;
+}
+.bcs-overview .bcs-ov-dev-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+.bcs-overview .bcs-ov-dev-role {
+    color: var(--bcs-muted);
+    margin-bottom: 0.8rem;
+}
+.bcs-overview .bcs-ov-dev-row {
+    padding: 0.6rem 0;
+    border-top: 1px solid var(--bcs-border);
+}
+.bcs-overview .bcs-ov-dev-icon {
+    margin-right: 0.5rem;
+}

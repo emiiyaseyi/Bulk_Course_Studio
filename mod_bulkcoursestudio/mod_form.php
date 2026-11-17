@@ -17,10 +17,10 @@
 /**
  * Settings form for the Bulk Course Studio embed activity.
  *
- * Like Edwiser's video activity, the teacher chooses a media source and
- * only the matching fields appear: a pasted link (YouTube, Vimeo, Google
- * Drive, OneDrive/SharePoint) or an uploaded video file. Supporting
- * resources can be attached either way. Moodle's standard sections
+ * The teacher chooses a media source and only the matching fields appear:
+ * a pasted link (YouTube, Vimeo, Loom, Google Drive, OneDrive/SharePoint),
+ * a direct link to a video file, or an uploaded video file. Resources and
+ * a transcript can be attached either way. Moodle's standard sections
  * (restrict access, completion, tags, competencies) come from
  * standard_coursemodule_elements().
  *
@@ -61,17 +61,23 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
 
         $mform->addElement('select', 'mediasource', get_string('mediasource', 'mod_bulkcoursestudio'), [
             'url' => get_string('mediasource:url', 'mod_bulkcoursestudio'),
+            'direct' => get_string('mediasource:direct', 'mod_bulkcoursestudio'),
             'upload' => get_string('mediasource:upload', 'mod_bulkcoursestudio'),
         ]);
         $mform->setDefault('mediasource', 'url');
 
+        $mform->addElement('static', 'urlnotice', '', get_string('mediasource:urlinfo', 'mod_bulkcoursestudio'));
+        $mform->hideIf('urlnotice', 'mediasource', 'neq', 'url');
+        $mform->addElement('static', 'directnotice', '', get_string('mediasource:directinfo', 'mod_bulkcoursestudio'));
+        $mform->hideIf('directnotice', 'mediasource', 'neq', 'direct');
+
         $mform->addElement('text', 'embedurl', get_string('embedurl', 'mod_bulkcoursestudio'), ['size' => '64']);
         $mform->setType('embedurl', PARAM_URL);
         $mform->addHelpButton('embedurl', 'embedurl', 'mod_bulkcoursestudio');
-        $mform->hideIf('embedurl', 'mediasource', 'neq', 'url');
+        $mform->hideIf('embedurl', 'mediasource', 'eq', 'upload');
 
-        $mform->addElement('static', 'embedurlnotice', '', get_string('embednotice:sharingrequired', 'mod_bulkcoursestudio'));
-        $mform->hideIf('embedurlnotice', 'mediasource', 'neq', 'url');
+        $mform->addElement('static', 'sharingnotice', '', get_string('embednotice:sharingrequired', 'mod_bulkcoursestudio'));
+        $mform->hideIf('sharingnotice', 'mediasource', 'neq', 'url');
 
         $maxmb = display_size(self::MAX_VIDEO_BYTES);
         $mform->addElement(
@@ -91,6 +97,10 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
         ]);
         $mform->hideIf('mediafile', 'mediasource', 'neq', 'upload');
 
+        $mform->addElement('advcheckbox', 'autonext', get_string('autonext', 'mod_bulkcoursestudio'));
+        $mform->addHelpButton('autonext', 'autonext', 'mod_bulkcoursestudio');
+        $mform->setDefault('autonext', 1);
+
         $mform->addElement('header', 'overviewheader', get_string('overview', 'mod_bulkcoursestudio'));
         $this->standard_intro_elements(get_string('overview', 'mod_bulkcoursestudio'));
 
@@ -102,12 +112,21 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
             'accepted_types' => '*',
         ]);
 
+        $mform->addElement('header', 'transcriptheader', get_string('transcriptheader', 'mod_bulkcoursestudio'));
+        $mform->addElement('static', 'transcriptdesc', '', get_string('transcriptdesc', 'mod_bulkcoursestudio'));
+        $mform->addElement('filemanager', 'transcript', get_string('transcriptfile', 'mod_bulkcoursestudio'), null, [
+            'subdirs' => 0,
+            'maxfiles' => 1,
+            'accepted_types' => ['.txt', '.vtt', '.srt'],
+        ]);
+
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();
     }
 
     /**
-     * Prepare the file manager draft areas (existing files when editing).
+     * Prepare the file manager draft areas (existing files when editing)
+     * and the completion rule's checkbox.
      *
      * @param array $defaultvalues
      */
@@ -118,7 +137,7 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
         if (!empty($this->current->coursemodule)) {
             $contextid = context_module::instance($this->current->coursemodule)->id;
         }
-        foreach (['mediafile', 'resources'] as $area) {
+        foreach (['mediafile', 'resources', 'transcript'] as $area) {
             $draftitemid = file_get_submitted_draft_itemid($area);
             file_prepare_draft_area($draftitemid, $contextid, 'mod_bulkcoursestudio', $area, 0, ['subdirs' => 0]);
             $defaultvalues[$area] = $draftitemid;
@@ -127,11 +146,34 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
         if (empty($defaultvalues['mediasource'])) {
             $defaultvalues['mediasource'] = 'url';
         }
+
+        $suffix = $this->get_suffix();
+        $percent = (int) ($defaultvalues['completionpercent'] ?? 0);
+        $defaultvalues['completionpercentenabled' . $suffix] = $percent > 0 ? 1 : 0;
+        $defaultvalues['completionpercent' . $suffix] = $percent > 0 ? $percent : 80;
     }
 
     /**
-     * Validate the submitted data: a link or a video file is required,
-     * depending on the chosen source.
+     * Clear the percentage when the rule is switched off.
+     *
+     * @param stdClass $data
+     */
+    public function data_postprocessing($data) {
+        parent::data_postprocessing($data);
+
+        if (!empty($data->completionunlocked)) {
+            $suffix = $this->get_suffix();
+            $completion = $data->{'completion' . $suffix} ?? ($data->completion ?? 0);
+            $automatic = !empty($completion) && $completion == COMPLETION_TRACKING_AUTOMATIC;
+            $enabled = !empty($data->{'completionpercentenabled' . $suffix});
+            if (!$enabled || !$automatic) {
+                $data->{'completionpercent' . $suffix} = 0;
+            }
+        }
+    }
+
+    /**
+     * Validate the submitted data.
      *
      * @param array $data
      * @param array $files
@@ -139,8 +181,11 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
      */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
+        $suffix = $this->get_suffix();
+        $source = $data['mediasource'] ?? 'url';
+        $provider = $source;
 
-        if (($data['mediasource'] ?? 'url') === 'upload') {
+        if ($source === 'upload') {
             $info = file_get_draft_area_info($data['mediafile']);
             if (empty($info['filecount'])) {
                 $errors['mediafile'] = get_string('mediafilerequired', 'mod_bulkcoursestudio');
@@ -154,6 +199,10 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
             }
         } else if (empty($data['embedurl'])) {
             $errors['embedurl'] = get_string('required');
+        } else if ($source === 'direct') {
+            if (!\mod_bulkcoursestudio\embed_resolver::is_direct_video_url($data['embedurl'])) {
+                $errors['embedurl'] = get_string('directurlinvalid', 'mod_bulkcoursestudio');
+            }
         } else {
             $provider = \mod_bulkcoursestudio\embed_resolver::detect_provider($data['embedurl']);
             if ($provider === '' ||
@@ -162,42 +211,63 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
             }
         }
 
+        // Percentage completion: a number from 1 to 100, and only for
+        // sources whose playback position can be read.
+        if (!empty($data['completionpercentenabled' . $suffix])) {
+            $percent = (int) ($data['completionpercent' . $suffix] ?? 0);
+            $group = 'completionpercentgroup' . $suffix;
+            if ($percent < 1 || $percent > 100) {
+                $errors[$group] = get_string('completionpercent_error', 'mod_bulkcoursestudio');
+            } else if (!isset($errors['embedurl']) && !\mod_bulkcoursestudio\embed_resolver::supports_progress($provider)) {
+                $errors[$group] = get_string('completionpercent_unsupported', 'mod_bulkcoursestudio');
+            }
+        }
+
         return $errors;
     }
 
     /**
-     * Custom completion rule: require a minimum number of seconds watched,
-     * in addition to (or instead of) core's view-based completion.
+     * Custom completion rule: watch at least a percentage of the video.
+     *
+     * @return string[] names of the added rule elements
      */
     public function add_completion_rules() {
         $mform = $this->_form;
+        $suffix = $this->get_suffix();
 
-        $mform->addElement(
-            'checkbox',
-            'completionminsecondsenabled',
-            get_string('completionminseconds', 'mod_bulkcoursestudio'),
-            ''
+        $group = [
+            $mform->createElement(
+                'checkbox',
+                'completionpercentenabled' . $suffix,
+                '',
+                get_string('completionpercent', 'mod_bulkcoursestudio')
+            ),
+            $mform->createElement('text', 'completionpercent' . $suffix, '', ['size' => 3]),
+            $mform->createElement('static', 'completionpercentsign' . $suffix, '', '%'),
+        ];
+        $mform->addGroup(
+            $group,
+            'completionpercentgroup' . $suffix,
+            get_string('completionpercentgroup', 'mod_bulkcoursestudio'),
+            [' '],
+            false
         );
-        $mform->addElement(
-            'duration',
-            'completionminseconds',
-            '',
-            ['optional' => false],
-            ['defaultunit' => 1]
-        );
-        $mform->disabledIf('completionminseconds', 'completionminsecondsenabled', 'notchecked');
+        $mform->setType('completionpercent' . $suffix, PARAM_INT);
+        $mform->setDefault('completionpercent' . $suffix, 80);
+        $mform->hideIf('completionpercent' . $suffix, 'completionpercentenabled' . $suffix, 'notchecked');
+        $mform->addHelpButton('completionpercentgroup' . $suffix, 'completionpercentgroup', 'mod_bulkcoursestudio');
 
-        return ['completionminsecondsenabled'];
+        return ['completionpercentgroup' . $suffix];
     }
 
     /**
-     * Whether the "minimum seconds watched" completion rule is enabled for
-     * a given set of submitted form data.
+     * Whether the percentage rule is switched on in the submitted data.
      *
      * @param array $data
      * @return bool
      */
     public function completion_rule_enabled($data) {
-        return !empty($data['completionminsecondsenabled']) && $data['completionminseconds'] > 0;
+        $suffix = $this->get_suffix();
+        return !empty($data['completionpercentenabled' . $suffix]) && (int) ($data['completionpercent' . $suffix] ?? 0) > 0;
     }
 }

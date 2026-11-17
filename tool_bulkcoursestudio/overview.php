@@ -15,14 +15,11 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Feature overview for Bulk Course Studio — a single page listing every
- * screen the admin tool and its companion activity module provide, each
- * with a direct link to open it, plus who built the plugin.
+ * Feature overview for Bulk Course Studio: a hero banner, the main
+ * features, quick links to every screen, and who built the plugin.
  *
- * Deliberately just a navigation aid, not a tour or wizard of its own: it
- * reads nothing from the database and writes nothing, so it's safe to
- * leave linked from the admin tree permanently rather than only during
- * onboarding.
+ * Only a navigation aid: it reads no plugin data and writes nothing, so it
+ * is safe to leave linked from the admin tree permanently.
  *
  * @package    tool_bulkcoursestudio
  * @copyright  2026 Bulk Course Studio
@@ -31,101 +28,118 @@
 
 require(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
+require_once($CFG->dirroot . '/course/lib.php');
 
 admin_externalpage_setup('tool_bulkcoursestudio_overview', '', null, '', ['pagelayout' => 'admin']);
-require_capability('tool/bulkcoursestudio:manage', context_system::instance());
+$systemcontext = context_system::instance();
+require_capability('tool/bulkcoursestudio:manage', $systemcontext);
 
 $PAGE->set_url('/admin/tool/bulkcoursestudio/overview.php');
 $PAGE->set_title(get_string('overview:title', 'tool_bulkcoursestudio'));
 
-/**
- * One feature-overview row: a name, a one-line description, and the URL
- * that opens it.
- *
- * @param string $name
- * @param string $description
- * @param moodle_url $url
- * @return string
- */
-function tool_bulkcoursestudio_overview_row(string $name, string $description, moodle_url $url): string {
-    global $OUTPUT;
-
-    return html_writer::start_div('d-flex justify-content-between align-items-start border-bottom py-2') .
-        html_writer::start_div() .
-        html_writer::tag('strong', $name) .
-        html_writer::tag('div', $description, ['class' => 'text-muted small']) .
-        html_writer::end_div() .
-        html_writer::link(
-            $url,
-            get_string('overview:open', 'tool_bulkcoursestudio'),
-            ['class' => 'btn btn-sm btn-outline-secondary']
-        ) .
-        html_writer::end_div();
-}
-
-$cansee = context_system::instance();
+$plugin = core_plugin_manager::instance()->get_plugin_info('tool_bulkcoursestudio');
+$release = $plugin ? $plugin->release : '';
+$modcount = count(get_module_types_names());
+$canupload = has_capability('tool/bulkcoursestudio:bulkupload', $systemcontext);
+$base = '/admin/tool/bulkcoursestudio/';
+$str = function (string $key, $a = null): string {
+    return get_string($key, 'tool_bulkcoursestudio', $a);
+};
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('overview:title', 'tool_bulkcoursestudio'));
-echo html_writer::tag('p', get_string('overview:intro', 'tool_bulkcoursestudio'), ['class' => 'text-muted']);
+echo html_writer::start_div('bcs bcs-overview');
 
-echo $OUTPUT->heading(get_string('overview:section:admintool', 'tool_bulkcoursestudio'), 3);
-
-echo tool_bulkcoursestudio_overview_row(
-    get_string('overview:feature:dashboard', 'tool_bulkcoursestudio'),
-    get_string('overview:feature:dashboard_desc', 'tool_bulkcoursestudio'),
-    new moodle_url('/admin/tool/bulkcoursestudio/index.php')
-);
-
-echo tool_bulkcoursestudio_overview_row(
-    get_string('overview:feature:wizard', 'tool_bulkcoursestudio'),
-    get_string('overview:feature:wizard_desc', 'tool_bulkcoursestudio'),
-    new moodle_url('/admin/tool/bulkcoursestudio/step_coursedetails.php')
-);
-
-if (has_capability('tool/bulkcoursestudio:bulkupload', $cansee)) {
-    echo tool_bulkcoursestudio_overview_row(
-        get_string('overview:feature:exceltemplate', 'tool_bulkcoursestudio'),
-        get_string('overview:feature:exceltemplate_desc', 'tool_bulkcoursestudio'),
-        new moodle_url('/admin/tool/bulkcoursestudio/excel_download.php')
-    );
-
-    echo tool_bulkcoursestudio_overview_row(
-        get_string('overview:feature:excelupload', 'tool_bulkcoursestudio'),
-        get_string('overview:feature:excelupload_desc', 'tool_bulkcoursestudio'),
-        new moodle_url('/admin/tool/bulkcoursestudio/excel_upload.php')
-    );
+// Hero banner.
+echo html_writer::start_div('bcs-ov-hero');
+echo html_writer::span('🎓 ' . $str('ov:badge', $release), 'bcs-ov-pill');
+echo html_writer::tag('h1', $str('pluginname'), ['class' => 'bcs-ov-title']);
+echo html_writer::tag('p', $str('ov:tagline'), ['class' => 'bcs-ov-tagline']);
+echo html_writer::start_div('bcs-ov-buttons');
+echo html_writer::link(new moodle_url($base . 'index.php'), '📊 ' . $str('ov:btn:dashboard'), ['class' => 'bcs-ov-btn is-light']);
+echo html_writer::link(new moodle_url($base . 'step_coursedetails.php'), '＋ ' . $str('startnewbuild'), ['class' => 'bcs-ov-btn']);
+if ($canupload) {
+    echo html_writer::link(new moodle_url($base . 'excel_download.php'), '📥 ' . $str('downloadtemplate'), ['class' => 'bcs-ov-btn']);
 }
+echo html_writer::end_div();
 
-echo tool_bulkcoursestudio_overview_row(
-    get_string('overview:feature:editexisting', 'tool_bulkcoursestudio'),
-    get_string('overview:feature:editexisting_desc', 'tool_bulkcoursestudio'),
-    new moodle_url('/admin/tool/bulkcoursestudio/edit_course.php')
-);
-
-echo $OUTPUT->heading(get_string('overview:section:mod', 'tool_bulkcoursestudio'), 3);
-
-echo html_writer::tag(
-    'p',
-    get_string('overview:mod_desc', 'tool_bulkcoursestudio'),
-    ['class' => 'text-muted small']
-);
-
-echo $OUTPUT->heading(get_string('overview:section:developer', 'tool_bulkcoursestudio'), 3);
-
-$developerlinks = [
-    get_string('overview:developer:linkedin', 'tool_bulkcoursestudio') =>
-        'https://www.linkedin.com/in/michaeladeniran',
-    get_string('overview:developer:github', 'tool_bulkcoursestudio') =>
-        'https://github.com/emiiyaseyi',
-    get_string('overview:developer:email', 'tool_bulkcoursestudio') =>
-        'mailto:michaeladeniransnr@gmail.com',
+$stats = [
+    ['5', $str('ov:stat:steps')],
+    [(string) $modcount, $str('ov:stat:activitytypes')],
+    [$release !== '' ? $release : '-', $str('ov:stat:version')],
+    ['4.5+', $str('ov:stat:moodle')],
 ];
-
-echo html_writer::start_tag('ul', ['class' => 'list-unstyled']);
-foreach ($developerlinks as $label => $url) {
-    echo html_writer::tag('li', html_writer::link($url, $label));
+echo html_writer::start_div('bcs-ov-stats');
+foreach ($stats as [$value, $label]) {
+    echo html_writer::div(
+        html_writer::div(s($value), 'bcs-ov-stat-value') . html_writer::div(s($label), 'bcs-ov-stat-label'),
+        'bcs-ov-stat'
+    );
 }
-echo html_writer::end_tag('ul');
+echo html_writer::end_div();
+echo html_writer::end_div();
 
+// Feature cards.
+$features = [
+    ['🧭', 'wizard'], ['📑', 'excel'], ['🧩', 'activities'], ['🔒', 'access'],
+    ['🏷️', 'tags'], ['🎬', 'video'], ['📈', 'percent'], ['👁️', 'hide'], ['✏️', 'edit'],
+];
+echo html_writer::tag('h3', $str('ov:section:features'), ['class' => 'bcs-subhead']);
+echo html_writer::start_div('bcs-ov-grid');
+foreach ($features as [$icon, $key]) {
+    echo html_writer::div(
+        html_writer::div($icon, 'bcs-ov-icon')
+        . html_writer::div($str('ov:f:' . $key), 'bcs-ov-card-title')
+        . html_writer::div($str('ov:f:' . $key . '_desc'), 'bcs-ov-card-text'),
+        'bcs-ov-card'
+    );
+}
+echo html_writer::end_div();
+
+// Quick navigation.
+$links = [
+    ['📊', 'ov:nav:dashboard', 'ov:nav:dashboard_desc', 'index.php'],
+    ['🧭', 'ov:nav:wizard', 'ov:nav:wizard_desc', 'step_coursedetails.php'],
+];
+if ($canupload) {
+    $links[] = ['📥', 'ov:nav:download', 'ov:nav:download_desc', 'excel_download.php'];
+    $links[] = ['📤', 'ov:nav:upload', 'ov:nav:upload_desc', 'excel_upload.php'];
+}
+$links[] = ['✏️', 'ov:nav:edit', 'ov:nav:edit_desc', 'edit_course.php'];
+
+echo html_writer::tag('h3', $str('ov:section:nav'), ['class' => 'bcs-subhead']);
+echo html_writer::start_div('bcs-ov-nav');
+foreach ($links as [$icon, $titlekey, $desckey, $page]) {
+    echo html_writer::link(
+        new moodle_url($base . $page),
+        html_writer::span($icon, 'bcs-ov-nav-icon')
+        . html_writer::span(
+            html_writer::div($str($titlekey), 'bcs-ov-nav-title') . html_writer::div($str($desckey), 'bcs-ov-nav-text'),
+            'bcs-ov-nav-body'
+        )
+        . html_writer::span('→', 'bcs-ov-nav-arrow'),
+        ['class' => 'bcs-ov-navcard']
+    );
+}
+echo html_writer::end_div();
+
+// Developer card.
+echo html_writer::start_div('bcs-ov-dev');
+echo html_writer::div('MA', 'bcs-ov-avatar');
+echo html_writer::tag('div', 'Michael Adeniran', ['class' => 'bcs-ov-dev-name']);
+echo html_writer::tag('div', $str('ov:dev:role'), ['class' => 'bcs-ov-dev-role']);
+$devlinks = [
+    ['💼', 'linkedin.com/in/michaeladeniran', 'https://www.linkedin.com/in/michaeladeniran'],
+    ['🐙', 'github.com/emiiyaseyi', 'https://github.com/emiiyaseyi'],
+    ['✉️', 'michaeladeniransnr@gmail.com', 'mailto:michaeladeniransnr@gmail.com'],
+];
+foreach ($devlinks as [$icon, $label, $url]) {
+    echo html_writer::div(html_writer::span($icon, 'bcs-ov-dev-icon') . html_writer::link($url, s($label)), 'bcs-ov-dev-row');
+}
+echo html_writer::div(
+    html_writer::span('📦', 'bcs-ov-dev-icon') . s($str('pluginname') . ' ' . $release . ' · GNU GPL v3 · Moodle 4.5+'),
+    'bcs-ov-dev-row text-muted'
+);
+echo html_writer::end_div();
+
+echo html_writer::end_div();
 echo $OUTPUT->footer();

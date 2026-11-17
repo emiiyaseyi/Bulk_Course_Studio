@@ -300,12 +300,12 @@ class template_parser {
      * older completion_view column when it is blank).
      *
      * @param bool $legacyview the older completion_view column was 1
-     * @param string $mode none|manual|view|minseconds|''
-     * @param int $minseconds
+     * @param string $mode none|manual|view|percent|''
+     * @param int $percent
      * @param string $modname
      * @return array
      */
-    private static function build_completion(bool $legacyview, string $mode, int $minseconds, string $modname): array {
+    private static function build_completion(bool $legacyview, string $mode, int $percent, string $modname): array {
         if ($mode === '') {
             $mode = $legacyview ? 'view' : '';
         }
@@ -316,11 +316,11 @@ class template_parser {
                 return ['completion' => 1, 'completionview' => 0];
             case 'view':
                 return ['completion' => 2, 'completionview' => 1];
-            case 'minseconds':
+            case 'percent':
                 $data = ['completion' => 2, 'completionview' => 1];
-                if ($modname === 'bulkcoursestudio' && $minseconds > 0) {
-                    $data['completionminsecondsenabled'] = 1;
-                    $data['completionminseconds'] = $minseconds;
+                if ($modname === 'bulkcoursestudio' && $percent > 0) {
+                    $data['completionpercentenabled'] = 1;
+                    $data['completionpercent'] = min(100, $percent);
                 }
                 return $data;
             default:

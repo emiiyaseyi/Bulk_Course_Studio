@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/bulkcoursestudio/db" VERSION="2026111701" COMMENT="XMLDB file for mod_bulkcoursestudio"
+<XMLDB PATH="mod/bulkcoursestudio/db" VERSION="2026111703" COMMENT="XMLDB file for mod_bulkcoursestudio"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 >
   <TABLES>
@@ -15,7 +15,9 @@
         <FIELD NAME="provider" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="vimeo|youtube|gdrive|onedrive|upload — resolved at save time"/>
         <FIELD NAME="mediasource" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="url" SEQUENCE="false" COMMENT="url = pasted link, upload = uploaded video file"/>
         <FIELD NAME="completionview" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Mark complete when the modal is opened"/>
-        <FIELD NAME="completionminseconds" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Optional: require N seconds of playback for completion"/>
+        <FIELD NAME="completionminseconds" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Legacy, no longer used since v1.3 (replaced by completionpercent)"/>
+        <FIELD NAME="completionpercent" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Percent of the video that must be watched for completion (1-100), 0 = off"/>
+        <FIELD NAME="autonext" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Go to the next activity when the video ends"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
@@ -32,6 +34,10 @@
         <FIELD NAME="bulkcoursestudioid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="secondswatched" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="currenttime" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Last playback position in seconds, used to resume"/>
+        <FIELD NAME="duration" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Video length in seconds"/>
+        <FIELD NAME="watchpercent" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Furthest point watched, as a percentage"/>
+        <FIELD NAME="provider" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="html5, youtube, vimeo..."/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>

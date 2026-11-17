@@ -53,6 +53,10 @@ class provider implements
             [
                 'userid' => 'privacy:metadata:progress:userid',
                 'secondswatched' => 'privacy:metadata:progress:secondswatched',
+                'currenttime' => 'privacy:metadata:progress:currenttime',
+                'duration' => 'privacy:metadata:progress:duration',
+                'watchpercent' => 'privacy:metadata:progress:percent',
+                'provider' => 'privacy:metadata:progress:provider',
                 'timemodified' => 'privacy:metadata:progress:timemodified',
             ],
             'privacy:metadata:progress'

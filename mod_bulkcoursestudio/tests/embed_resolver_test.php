@@ -130,6 +130,31 @@ final class embed_resolver_test extends \basic_testcase {
         $this->assertSame('', embed_resolver::to_embed_src($maliciouswithsinglequote, embed_resolver::PROVIDER_ONEDRIVE));
     }
 
+    public function test_loom_links_resolve_to_the_embed_form(): void {
+        $this->assertSame(embed_resolver::PROVIDER_LOOM, embed_resolver::detect_provider('https://www.loom.com/share/abc123DEF'));
+        $this->assertSame(
+            'https://www.loom.com/embed/abc123DEF',
+            embed_resolver::to_embed_src('https://www.loom.com/share/abc123DEF?sid=x', embed_resolver::PROVIDER_LOOM)
+        );
+    }
+
+    public function test_direct_video_urls_are_recognised_safely(): void {
+        $this->assertTrue(embed_resolver::is_direct_video_url('https://example.com/videos/lesson1.mp4'));
+        $this->assertTrue(embed_resolver::is_direct_video_url('https://example.com/a.webm?token=1'));
+        $this->assertFalse(embed_resolver::is_direct_video_url('https://example.com/watch?v=1'));
+        $this->assertFalse(embed_resolver::is_direct_video_url('javascript:alert(1)'));
+        $this->assertFalse(embed_resolver::is_direct_video_url('https://example.com/a.mp4" onload="x'));
+    }
+
+    public function test_progress_tracking_is_supported_only_where_the_player_reports_it(): void {
+        foreach ([embed_resolver::PROVIDER_YOUTUBE, embed_resolver::PROVIDER_VIMEO, 'upload', 'direct'] as $provider) {
+            $this->assertTrue(embed_resolver::supports_progress($provider));
+        }
+        foreach ([embed_resolver::PROVIDER_GDRIVE, embed_resolver::PROVIDER_ONEDRIVE, embed_resolver::PROVIDER_LOOM, ''] as $provider) {
+            $this->assertFalse(embed_resolver::supports_progress($provider));
+        }
+    }
+
     public function test_sharing_notice_shown_only_for_drive_and_onedrive(): void {
         $this->assertNotSame('', embed_resolver::get_sharing_notice(embed_resolver::PROVIDER_GDRIVE));
         $this->assertNotSame('', embed_resolver::get_sharing_notice(embed_resolver::PROVIDER_ONEDRIVE));

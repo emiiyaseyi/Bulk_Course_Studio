@@ -40,8 +40,6 @@ $string['openembed'] = 'Open video';
 $string['embednotice:sharingrequired'] = 'Google Drive and OneDrive links must be set to "Anyone with the link can view" or students will not be able to open the video.';
 $string['embedunresolvable'] = 'This video link could not be resolved into a playable embed. Edit this activity and check the Video URL field.';
 
-$string['completionminseconds'] = 'Student must watch for at least';
-$string['completiondetail:minseconds'] = 'Watch for at least {$a} seconds';
 
 $string['bulkcoursestudio:addinstance'] = 'Add a new Bulk Course Studio embed';
 $string['bulkcoursestudio:view'] = 'View a Bulk Course Studio embed';
@@ -66,3 +64,29 @@ $string['opencomputerfile'] = 'Open video';
 $string['mediasource:uploadinfo'] = 'Upload an MP4, WebM, M4V, MOV or 3GP file, up to {$a}.';
 $string['mediasource:uploadwarning'] = 'Not recommended for large files: big videos quickly fill server storage and slow the site down. The limit is {$a}. For longer recordings, add a link instead.';
 $string['mediafiletoolarge'] = 'This video is too large. The maximum upload size is {$a}. Use a link for longer videos.';
+
+// Added in v1.3: percentage completion, more sources, tabs, auto-advance.
+$string['mediasource:direct'] = 'Direct link to a video file (.mp4, .webm...)';
+$string['mediasource:urlinfo'] = 'Paste a YouTube, Vimeo, Loom, Google Drive or OneDrive/SharePoint link.';
+$string['mediasource:directinfo'] = 'Paste a link that goes straight to a video file, for example https://example.com/lesson.mp4.';
+$string['directurlinvalid'] = 'This is not a direct link to a video file. It must start with https:// and end in .mp4, .webm, .m4v, .mov, .3gp or .ogv.';
+$string['autonext'] = 'Go to the next activity when the video ends';
+$string['autonext_help'] = 'When the video finishes, a short "coming up next" countdown appears and the learner is taken to the next activity in the course. They can cancel it.';
+$string['transcriptheader'] = 'Transcript';
+$string['transcriptdesc'] = 'Optional text version of the video, for accessibility. Shown in the Transcript tab.';
+$string['transcriptfile'] = 'Transcript file';
+$string['transcriptview'] = 'Transcript';
+$string['nooverview'] = 'No description has been added for this video.';
+$string['comingupnext'] = 'Coming up next';
+$string['resumevideo'] = 'Resume video';
+$string['watchedpercent'] = '{$a}% watched';
+$string['completionpercentgroup'] = 'Watch percentage';
+$string['completionpercentgroup_help'] = 'Learners must watch at least this percentage of the video for the activity to be marked complete. It works for uploaded videos, direct video links, YouTube and Vimeo. Google Drive, OneDrive and Loom do not share playback progress, so use "view" completion for those.';
+$string['completionpercent'] = 'Learner must watch at least';
+$string['completionpercent_error'] = 'Enter a percentage from 1 to 100.';
+$string['completionpercent_unsupported'] = 'Percentage completion needs an uploaded video, a direct video link, YouTube or Vimeo. This link type cannot report how much was watched.';
+$string['completiondetail:percent'] = 'Watch at least {$a}% of the video';
+$string['privacy:metadata:progress:currenttime'] = 'The last playback position, used to resume the video.';
+$string['privacy:metadata:progress:duration'] = 'The length of the video in seconds.';
+$string['privacy:metadata:progress:percent'] = 'The furthest point of the video the user has watched, as a percentage.';
+$string['privacy:metadata:progress:provider'] = 'Which player the video was watched in (for example YouTube).';
