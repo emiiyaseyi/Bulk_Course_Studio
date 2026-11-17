@@ -31,6 +31,7 @@ require_once($CFG->libdir . '/adminlib.php');
 
 use tool_bulkcoursestudio\draft_repository;
 use tool_bulkcoursestudio\build_manager;
+use tool_bulkcoursestudio\output\ui;
 
 $buildid = required_param('buildid', PARAM_INT);
 
@@ -44,7 +45,8 @@ $PAGE->set_title(get_string('step:preview', 'tool_bulkcoursestudio'));
 $preview = build_manager::preview($buildid);
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('step:preview', 'tool_bulkcoursestudio'));
+echo ui::begin('preview', (int) $buildid, get_string('step:preview', 'tool_bulkcoursestudio'),
+    get_string('stepsub:preview', 'tool_bulkcoursestudio'));
 
 foreach ($preview->errors as $error) {
     echo $OUTPUT->notification($error, 'error');
@@ -90,4 +92,5 @@ echo html_writer::link(
     ['class' => 'btn btn-link']
 );
 
+echo ui::end();
 echo $OUTPUT->footer();

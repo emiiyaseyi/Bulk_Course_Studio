@@ -39,15 +39,17 @@ define([
      *                           and passed in from view.php — kept out of
      *                           this module so the URL-rewriting rules live
      *                           in exactly one place, in PHP)
+     * @param {String} mediaType 'iframe' for an embedded link, 'video' for an
+     *                           uploaded video file played with the browser's own player
      */
-    var init = function(cmid, embedSrc) {
+    var init = function(cmid, embedSrc, mediaType) {
         var button = document.querySelector('[data-bulkcoursestudio-launch="' + cmid + '"]');
         if (!button) {
             return;
         }
 
         button.addEventListener('click', function() {
-            openModal(cmid, embedSrc);
+            openModal(cmid, embedSrc, mediaType);
         });
     };
 
@@ -70,7 +72,7 @@ define([
             .replace(/>/g, '&gt;');
     };
 
-    var openModal = function(cmid, embedSrc) {
+    var openModal = function(cmid, embedSrc, mediaType) {
         if (!embedSrc) {
             Notification.alert(
                 '',
@@ -86,7 +88,10 @@ define([
         ModalFactory.create({
             type: ModalFactory.types.DEFAULT,
             large: true,
-            body: '<div class="bulkcoursestudio-embed-wrap" style="position:relative;padding-top:56.25%;">' +
+            body: mediaType === 'video' ?
+                '<video controls autoplay playsinline src="' + safeEmbedSrc + '" ' +
+                'style="width:100%;max-height:75vh;background:#000;"></video>' :
+                '<div class="bulkcoursestudio-embed-wrap" style="position:relative;padding-top:56.25%;">' +
                 '<iframe src="' + safeEmbedSrc + '" allow="autoplay; fullscreen" allowfullscreen ' +
                 'style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"></iframe>' +
                 '</div>',

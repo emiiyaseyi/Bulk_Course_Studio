@@ -29,6 +29,7 @@ require_once($CFG->libdir . '/adminlib.php');
 use tool_bulkcoursestudio\draft_repository;
 use tool_bulkcoursestudio\build_manager;
 use tool_bulkcoursestudio\form\course_details_form;
+use tool_bulkcoursestudio\output\ui;
 
 $buildid = optional_param('buildid', 0, PARAM_INT);
 
@@ -93,6 +94,8 @@ if ($form->is_cancelled()) {
 }
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('step:coursedetails', 'tool_bulkcoursestudio'));
+echo ui::begin('coursedetails', (int) $buildid, get_string('step:coursedetails', 'tool_bulkcoursestudio'),
+    get_string('stepsub:coursedetails', 'tool_bulkcoursestudio'));
 $form->display();
+echo ui::end();
 echo $OUTPUT->footer();

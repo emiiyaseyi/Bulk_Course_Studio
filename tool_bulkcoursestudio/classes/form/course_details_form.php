@@ -61,6 +61,19 @@ class course_details_form extends \moodleform {
         $mform->addElement('editor', 'summary_editor', get_string('coursesummary'));
         $mform->setType('summary_editor', PARAM_RAW);
 
+        $mform->addElement('tags', 'tags', get_string('tags'), ['itemtype' => 'course', 'component' => 'core']);
+
+        $competencies = $this->get_competency_options();
+        if ($competencies) {
+            $mform->addElement(
+                'autocomplete',
+                'competencyids',
+                get_string('competencies', 'core_competency'),
+                $competencies,
+                ['multiple' => true, 'noselectionstring' => get_string('nocompetencies', 'tool_bulkcoursestudio')]
+            );
+        }
+
         $mform->addElement('filemanager', 'courseimage', get_string('courseimage', 'tool_bulkcoursestudio'), null, [
             'subdirs' => 0,
             'maxfiles' => 1,
@@ -77,6 +90,27 @@ class course_details_form extends \moodleform {
         $mform->setDefault('enablecompletion', 1);
 
         $this->add_action_buttons(true, get_string('next', 'tool_bulkcoursestudio'));
+    }
+
+    /**
+     * Competencies an admin can link to the course, id => short name.
+     * Empty when the competencies feature is off or none exist.
+     *
+     * @return string[]
+     */
+    private function get_competency_options(): array {
+        $options = [];
+        try {
+            if (\core_competency\api::is_enabled()) {
+                foreach (\core_competency\api::list_competencies([], 'shortname', 'ASC', 0, 0) as $competency) {
+                    $options[$competency->get('id')] = format_string($competency->get('shortname'));
+                }
+            }
+        } catch (\Throwable $e) {
+            debugging('Could not list competencies: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            return [];
+        }
+        return $options;
     }
 
     /**

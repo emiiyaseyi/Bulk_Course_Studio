@@ -50,6 +50,9 @@ class restore_bulkcoursestudio_activity_structure_step extends restore_activity_
         $data = (object) $data;
         $oldid = $data->id;
         $data->course = $this->get_courseid();
+        if (empty($data->mediasource)) {
+            $data->mediasource = 'url'; // Backups made before v0.2.0.
+        }
 
         $newitemid = $DB->insert_record('bulkcoursestudio', $data);
         // Maps the backup-file id to the new live id so completion/grade
@@ -85,5 +88,7 @@ class restore_bulkcoursestudio_activity_structure_step extends restore_activity_
         // Rewrite intro-field @@PLUGINFILE@@ links against the restored
         // file area, same as every other activity module's intro field.
         $this->add_related_files('mod_bulkcoursestudio', 'intro', null);
+        $this->add_related_files('mod_bulkcoursestudio', 'mediafile', null);
+        $this->add_related_files('mod_bulkcoursestudio', 'resources', null);
     }
 }

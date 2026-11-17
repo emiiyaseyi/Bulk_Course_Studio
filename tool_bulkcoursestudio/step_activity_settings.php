@@ -59,6 +59,7 @@ require_once($CFG->dirroot . '/course/lib.php');
 use tool_bulkcoursestudio\draft_repository;
 use tool_bulkcoursestudio\build_manager;
 use tool_bulkcoursestudio\native_form_registry;
+use tool_bulkcoursestudio\output\ui;
 
 $buildid = required_param('buildid', PARAM_INT);
 $sectionid = required_param('sectionid', PARAM_INT);
@@ -178,6 +179,8 @@ if ($mform->is_cancelled()) {
 }
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading($moddisplayname);
+echo ui::begin('activities', $buildid, $moddisplayname,
+    get_string('activitysettings:sub', 'tool_bulkcoursestudio'));
 $mform->display();
+echo ui::end();
 echo $OUTPUT->footer();

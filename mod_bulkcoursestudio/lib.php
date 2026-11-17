@@ -62,9 +62,69 @@ function bulkcoursestudio_add_instance(stdClass $data, $mform = null): int {
 
     $data->timecreated = time();
     $data->timemodified = $data->timecreated;
-    $data->provider = \mod_bulkcoursestudio\embed_resolver::detect_provider($data->embedurl ?? '');
+    bulkcoursestudio_prepare_media_fields($data);
 
-    return $DB->insert_record('bulkcoursestudio', $data);
+    $data->id = $DB->insert_record('bulkcoursestudio', $data);
+    bulkcoursestudio_save_files($data);
+
+    return $data->id;
+}
+
+/**
+ * Normalise the media source fields before saving: an uploaded video has
+ * no link, a linked video has its provider detected from the URL.
+ *
+ * @param stdClass $data form data being saved
+ */
+function bulkcoursestudio_prepare_media_fields(stdClass $data): void {
+    if (($data->mediasource ?? 'url') === 'upload') {
+        $data->mediasource = 'upload';
+        $data->embedurl = '';
+        $data->provider = 'upload';
+    } else {
+        $data->mediasource = 'url';
+        $data->embedurl = $data->embedurl ?? '';
+        $data->provider = \mod_bulkcoursestudio\embed_resolver::detect_provider($data->embedurl);
+    }
+}
+
+/**
+ * Move the uploaded video and resource files from the form's draft areas
+ * into this activity's own file areas.
+ *
+ * @param stdClass $data form data; needs ->coursemodule
+ */
+function bulkcoursestudio_save_files(stdClass $data): void {
+    if (empty($data->coursemodule)) {
+        return;
+    }
+    $context = context_module::instance($data->coursemodule);
+
+    if (isset($data->mediafile)) {
+        if ($data->mediasource === 'upload') {
+            file_save_draft_area_files(
+                $data->mediafile,
+                $context->id,
+                'mod_bulkcoursestudio',
+                'mediafile',
+                0,
+                ['subdirs' => 0, 'maxfiles' => 1]
+            );
+        } else {
+            // Switched to a pasted link: don't keep an orphaned video file.
+            get_file_storage()->delete_area_files($context->id, 'mod_bulkcoursestudio', 'mediafile', 0);
+        }
+    }
+    if (isset($data->resources)) {
+        file_save_draft_area_files(
+            $data->resources,
+            $context->id,
+            'mod_bulkcoursestudio',
+            'resources',
+            0,
+            ['subdirs' => 0, 'maxfiles' => -1]
+        );
+    }
 }
 
 /**
@@ -75,9 +135,12 @@ function bulkcoursestudio_update_instance(stdClass $data, $mform = null): bool {
 
     $data->id = $data->instance;
     $data->timemodified = time();
-    $data->provider = \mod_bulkcoursestudio\embed_resolver::detect_provider($data->embedurl ?? '');
+    bulkcoursestudio_prepare_media_fields($data);
 
-    return $DB->update_record('bulkcoursestudio', $data);
+    $result = $DB->update_record('bulkcoursestudio', $data);
+    bulkcoursestudio_save_files($data);
+
+    return $result;
 }
 
 /**
@@ -198,9 +261,9 @@ function bulkcoursestudio_pluginfile(
     }
 
     require_login($course, true, $cm);
+    require_capability('mod/bulkcoursestudio:view', $context);
 
-    if ($filearea !== 'intro') {
-        // Intro is the only file area this module's own mod_form exposes.
+    if (!in_array($filearea, ['intro', 'mediafile', 'resources'], true)) {
         return false;
     }
 
@@ -211,7 +274,7 @@ function bulkcoursestudio_pluginfile(
 
     $fs = get_file_storage();
     $relativepath = implode('/', $args);
-    $fullpath = "/$context->id/mod_bulkcoursestudio/intro/0/$relativepath";
+    $fullpath = "/$context->id/mod_bulkcoursestudio/$filearea/0/$relativepath";
     $file = $fs->get_file_by_hash(sha1($fullpath));
     if (!$file || $file->is_directory()) {
         return false;

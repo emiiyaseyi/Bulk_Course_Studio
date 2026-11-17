@@ -28,6 +28,7 @@ require(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 
 use tool_bulkcoursestudio\draft_repository;
+use tool_bulkcoursestudio\output\ui;
 use tool_bulkcoursestudio\build_manager;
 use tool_bulkcoursestudio\form\section_form;
 
@@ -78,25 +79,38 @@ if ($data = $form->get_data()) {
 $sections = draft_repository::get_sections($buildid);
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('step:sections', 'tool_bulkcoursestudio'));
+echo ui::begin('sections', (int) $buildid, get_string('step:sections', 'tool_bulkcoursestudio'),
+    get_string('stepsub:sections', 'tool_bulkcoursestudio'));
 
-echo html_writer::start_tag('ul');
+echo html_writer::start_div('bcs-section');
+echo html_writer::div(html_writer::tag('h3', get_string('sectionslist', 'tool_bulkcoursestudio'), ['class' => 'bcs-section-title']), 'bcs-section-head');
 foreach ($sections as $section) {
     $editurl = new moodle_url(
         '/admin/tool/bulkcoursestudio/step_sections.php',
         ['buildid' => $buildid, 'sectionid' => $section->id]
     );
-    echo html_writer::tag('li', format_string($section->name) . ' ' . html_writer::link($editurl, get_string('edit')));
+    echo html_writer::div(
+        html_writer::span(format_string($section->name), 'bcs-activity-name')
+        . html_writer::link($editurl, get_string('edit'), ['class' => 'btn btn-secondary btn-sm']),
+        'bcs-activity'
+    );
 }
-echo html_writer::end_tag('ul');
+if (empty($sections)) {
+    echo html_writer::div(get_string('nosectionsyet', 'tool_bulkcoursestudio'), 'bcs-empty');
+}
+echo html_writer::end_div();
 
 $form->display();
 
 if (!empty($sections)) {
     $nexturl = new moodle_url('/admin/tool/bulkcoursestudio/step_sections.php', ['buildid' => $buildid, 'action' => 'next']);
-    echo html_writer::link($nexturl, get_string('step:activities', 'tool_bulkcoursestudio'), ['class' => 'btn btn-secondary']);
+    echo html_writer::div(
+        html_writer::link($nexturl, get_string('step:activities', 'tool_bulkcoursestudio') . ' →', ['class' => 'btn btn-primary']),
+        'bcs-footer justify-content-end'
+    );
 } else {
     echo $OUTPUT->notification(get_string('preview:warning:nosections', 'tool_bulkcoursestudio'), 'info');
 }
 
+echo ui::end();
 echo $OUTPUT->footer();

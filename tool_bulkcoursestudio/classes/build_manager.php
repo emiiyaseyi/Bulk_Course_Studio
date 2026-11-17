@@ -242,6 +242,12 @@ class build_manager {
             $coursedata->format = 'topics';
         }
 
+        // Competencies are linked through their own API after the course
+        // exists, not through create_course()/update_course().
+        $linkcompetencies = property_exists($coursedata, 'competencyids');
+        $competencyids = array_map('intval', (array) ($coursedata->competencyids ?? []));
+        unset($coursedata->competencyids);
+
         $transaction = $DB->start_delegated_transaction();
 
         if (empty($build->courseid)) {
@@ -260,6 +266,9 @@ class build_manager {
         }
 
         self::commit_course_image($course, $buildid);
+        if ($linkcompetencies) {
+            self::sync_course_competencies((int) $course->id, $competencyids);
+        }
 
         $sections = $DB->get_records('tool_bulkcoursestudio_section', ['buildid' => $buildid], 'sortorder ASC');
 
@@ -300,6 +309,29 @@ class build_manager {
         $transaction->allow_commit();
 
         return $course->id;
+    }
+
+    /**
+     * Make the course's linked competencies match the chosen list, using
+     * the core competency API (no-op when the feature is disabled).
+     *
+     * @param int $courseid
+     * @param int[] $wanted competency ids
+     */
+    private static function sync_course_competencies(int $courseid, array $wanted): void {
+        if (!\core_competency\api::is_enabled()) {
+            return;
+        }
+        $current = [];
+        foreach (\core_competency\api::list_course_competencies($courseid) as $item) {
+            $current[] = (int) $item['competency']->get('id');
+        }
+        foreach (array_diff($wanted, $current) as $id) {
+            \core_competency\api::add_competency_to_course($courseid, $id);
+        }
+        foreach (array_diff($current, $wanted) as $id) {
+            \core_competency\api::remove_competency_from_course($courseid, $id);
+        }
     }
 
     /**

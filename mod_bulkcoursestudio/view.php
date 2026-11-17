@@ -54,12 +54,31 @@ $PAGE->set_context($context);
 $completioninfo = new completion_info($course);
 $completioninfo->set_module_viewed($cm);
 
-$embedsrc = \mod_bulkcoursestudio\embed_resolver::to_embed_src($instance->embedurl, $instance->provider);
-$sharingnotice = \mod_bulkcoursestudio\embed_resolver::get_sharing_notice($instance->provider);
+$fs = get_file_storage();
+$mediatype = 'iframe';
+if (($instance->mediasource ?? 'url') === 'upload') {
+    // Uploaded video: play it straight from this activity's own file area.
+    $videofiles = $fs->get_area_files($context->id, 'mod_bulkcoursestudio', 'mediafile', 0, 'sortorder, id', false);
+    $videofile = reset($videofiles);
+    $embedsrc = $videofile ? moodle_url::make_pluginfile_url(
+        $context->id,
+        'mod_bulkcoursestudio',
+        'mediafile',
+        0,
+        $videofile->get_filepath(),
+        $videofile->get_filename()
+    )->out(false) : '';
+    $mediatype = 'video';
+    $sharingnotice = '';
+} else {
+    $embedsrc = \mod_bulkcoursestudio\embed_resolver::to_embed_src($instance->embedurl, $instance->provider);
+    $sharingnotice = \mod_bulkcoursestudio\embed_resolver::get_sharing_notice($instance->provider);
+}
 
 $PAGE->requires->js_call_amd('mod_bulkcoursestudio/launcher', 'init', [
     (int) $cm->id,
     $embedsrc,
+    $mediatype,
 ]);
 
 echo $OUTPUT->header();
@@ -86,6 +105,26 @@ if ($embedsrc === '') {
         'id' => 'bulkcoursestudio-launch-' . $cm->id,
         'data-bulkcoursestudio-launch' => $cm->id,
     ]);
+}
+
+// Supporting files attached to the activity.
+$resources = $fs->get_area_files($context->id, 'mod_bulkcoursestudio', 'resources', 0, 'filename', false);
+if ($resources) {
+    echo $OUTPUT->heading(get_string('resourcesview', 'mod_bulkcoursestudio'), 4, 'mt-4');
+    echo html_writer::start_tag('ul', ['class' => 'list-unstyled']);
+    foreach ($resources as $resource) {
+        $url = moodle_url::make_pluginfile_url(
+            $context->id,
+            'mod_bulkcoursestudio',
+            'resources',
+            0,
+            $resource->get_filepath(),
+            $resource->get_filename(),
+            true
+        );
+        echo html_writer::tag('li', html_writer::link($url, s($resource->get_filename())), ['class' => 'mb-1']);
+    }
+    echo html_writer::end_tag('ul');
 }
 
 echo $OUTPUT->footer();

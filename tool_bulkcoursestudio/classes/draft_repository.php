@@ -327,6 +327,23 @@ class draft_repository {
     }
 
     /**
+     * Remove one draft activity, and the real course module it created (if
+     * any) through core's own course_delete_module().
+     *
+     * @param int $activityid
+     */
+    public static function delete_activity(int $activityid): void {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $activity = $DB->get_record('tool_bulkcoursestudio_activity', ['id' => $activityid], '*', MUST_EXIST);
+        if (!empty($activity->committedcmid) && $DB->record_exists('course_modules', ['id' => $activity->committedcmid])) {
+            course_delete_module($activity->committedcmid);
+        }
+        $DB->delete_records('tool_bulkcoursestudio_activity', ['id' => $activityid]);
+    }
+
+    /**
      * Permanently remove a draft build and all of its sections and
      * activities. Does not touch any real course — callers that need the
      * course removed too should go through build_manager::discard().

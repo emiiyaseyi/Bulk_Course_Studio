@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - https://moodle.org/
+// This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,23 +17,14 @@
 namespace tool_bulkcoursestudio;
 
 /**
- * Which activity types get their real, native mod_form.php embedded in the
- * wizard (step_activity_settings.php) versus the shared generic form with
- * the "Advanced settings (JSON)" fallback (activity_form.php).
+ * Decides which activity types the wizard can offer and how.
  *
- * Scoped to exactly the v1 activity-type list from the project spec (§8):
- * assign, quiz, forum, page, url, resource, folder. Anything outside that
- * list still works end-to-end through the generic form's JSON fallback —
- * build_manager::commit_activity() passes moduledata through to
- * add_moduleinfo()/update_moduleinfo() unchanged either way, so this list
- * only decides which types get a friendlier settings UI, never which
- * types are functionally supported.
- *
- * mod_bulkcoursestudio is deliberately excluded even though it's v1-scope:
- * it's this plugin's own companion module, already has a first-class
- * "embed URL" field directly in activity_form.php, and its own settings
- * are trivial enough that native-form embedding would add complexity
- * without adding capability.
+ * Every enabled activity type that ships a mod_form.php is built with its
+ * own real settings form (embedded by step_activity_settings.php through
+ * core's course/modlib.php contract). That is what gives every activity
+ * its own fields (URL, file upload, embed code, grading...) plus Moodle's
+ * standard sections: restrict access, activity completion, tags and
+ * competencies.
  *
  * @package    tool_bulkcoursestudio
  * @copyright  2026 Bulk Course Studio
@@ -41,32 +32,62 @@ namespace tool_bulkcoursestudio;
  */
 class native_form_registry {
     /**
-     * The v1-scope activity types that get a real, native mod_form.php
-     * embedded in the wizard instead of the generic JSON-fallback form.
+     * Activity types shown first in the chooser, in this order, when installed.
      *
      * @var string[]
      */
-    const NATIVE_FORM_MODNAMES = ['assign', 'quiz', 'forum', 'page', 'url', 'resource', 'folder'];
+    const FEATURED = ['bulkcoursestudio', 'edwiservideoactivity', 'url', 'resource', 'page', 'folder',
+        'assign', 'quiz', 'forum', 'h5pactivity'];
 
     /**
-     * Whether a given activity type should use its real mod_form.php in the
-     * wizard rather than the generic JSON-fallback form.
+     * Whether an activity type can be built with its real settings form.
      *
      * @param string $modname
      * @return bool
      */
     public static function uses_native_form(string $modname): bool {
-        return in_array($modname, self::NATIVE_FORM_MODNAMES, true)
+        return clean_param($modname, PARAM_PLUGIN) === $modname
             && file_exists(self::mod_form_path($modname));
     }
 
     /**
-     * Guards against a v1-scope type being uninstalled/disabled on this
-     * particular site — falls back to the generic form rather than a fatal
-     * require_once() on a missing file.
+     * Path of a module's own mod_form.php.
+     *
+     * @param string $modname
+     * @return string
      */
     public static function mod_form_path(string $modname): string {
         global $CFG;
         return $CFG->dirroot . '/mod/' . $modname . '/mod_form.php';
+    }
+
+    /**
+     * Activity types the current admin can add to this course, featured
+     * ones first and the rest alphabetically.
+     *
+     * @param int $courseid the build's real (hidden) course
+     * @return string[] modname => display name
+     */
+    public static function get_addable_types(int $courseid): array {
+        global $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $context = \context_course::instance($courseid);
+        $all = [];
+        foreach (get_module_types_names() as $modname => $displayname) {
+            if (self::uses_native_form($modname) && has_capability('mod/' . $modname . ':addinstance', $context)) {
+                $all[$modname] = $displayname;
+            }
+        }
+        asort($all, SORT_NATURAL | SORT_FLAG_CASE);
+
+        $featured = [];
+        foreach (self::FEATURED as $modname) {
+            if (isset($all[$modname])) {
+                $featured[$modname] = $all[$modname];
+                unset($all[$modname]);
+            }
+        }
+        return $featured + $all;
     }
 }

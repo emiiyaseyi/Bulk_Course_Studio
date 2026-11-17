@@ -15,13 +15,13 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Wizard step 4: activities. Lists every section in the build with its
- * activities, and lets the admin add one. For a v1-scope type (spec §8:
- * assign, quiz, forum, page, url, resource, folder), picking it here hands
- * straight off to step_activity_settings.php, which embeds that module's
- * real native mod_form.php. For mod_bulkcoursestudio and anything outside
- * that scope, the fields stay on activity_form (name/description/
- * completion plus an "Advanced settings (JSON)" fallback).
+ * Wizard step 4: activities.
+ *
+ * Shows every section as a card with its activities. "Add activity" opens
+ * a tile chooser of every activity type installed on the site; picking a
+ * tile goes straight to step_activity_settings.php, which shows that
+ * activity's own real settings form (URL, file upload, embed code, grading,
+ * restrict access, completion, tags, competencies...).
  *
  * @package    tool_bulkcoursestudio
  * @copyright  2026 Bulk Course Studio
@@ -33,173 +33,179 @@ require_once($CFG->libdir . '/adminlib.php');
 
 use tool_bulkcoursestudio\draft_repository;
 use tool_bulkcoursestudio\native_form_registry;
-use tool_bulkcoursestudio\form\activity_form;
+use tool_bulkcoursestudio\output\ui;
 
 $buildid = required_param('buildid', PARAM_INT);
-$sectionid = optional_param('sectionid', 0, PARAM_INT);
-$activityid = optional_param('activityid', 0, PARAM_INT);
-$action = optional_param('action', '', PARAM_ALPHA);
+$choosesection = optional_param('choose', 0, PARAM_INT);
+$removeid = optional_param('remove', 0, PARAM_INT);
+$confirm = optional_param('confirm', 0, PARAM_BOOL);
 
 admin_externalpage_setup('tool_bulkcoursestudio', '', null, '', ['pagelayout' => 'admin']);
 require_capability('tool/bulkcoursestudio:manage', context_system::instance());
 
-draft_repository::get_build($buildid); // Existence/ownership check.
+$build = draft_repository::get_build($buildid);
 $PAGE->set_url('/admin/tool/bulkcoursestudio/step_activities.php', ['buildid' => $buildid]);
 $PAGE->set_title(get_string('step:activities', 'tool_bulkcoursestudio'));
 
-if ($action === 'next') {
-    redirect(new moodle_url('/admin/tool/bulkcoursestudio/step_preview.php', ['buildid' => $buildid]));
-}
-
+$thisurl = new moodle_url('/admin/tool/bulkcoursestudio/step_activities.php', ['buildid' => $buildid]);
 $sections = draft_repository::get_sections($buildid);
+$sectionids = array_keys($sections);
 
-// The add/edit activity form only renders once a section is selected.
-if ($sectionid) {
-    global $DB;
-    $section = $DB->get_record('tool_bulkcoursestudio_section', ['id' => $sectionid, 'buildid' => $buildid], '*', MUST_EXIST);
-
-    $form = new activity_form(new moodle_url('/admin/tool/bulkcoursestudio/step_activities.php', [
-        'buildid' => $buildid, 'sectionid' => $sectionid, 'activityid' => $activityid,
-    ]));
-
-    // Files are stored in this plugin's own draft area under component
-    // tool_bulkcoursestudio, filearea activityfiles, itemid = the draft
-    // activity's id (spec §3.1 step 1a's filemanager pattern). A
-    // not-yet-created activity has no id yet, so the filemanager field is
-    // keyed to a plain submitted-draft itemid on first display and only
-    // re-keyed to the real activity id once add_or_update_activity() below
-    // returns one — the same two-step dance step_coursedetails.php uses for
-    // the course image, which is the standard way Moodle handles a
-    // filemanager field on an entity that doesn't exist until the form
-    // that creates it is submitted.
-    $filesdraftitemid = file_get_submitted_draft_itemid('activityfiles');
-
-    if ($activityid) {
-        $existing = $DB->get_record(
-            'tool_bulkcoursestudio_activity',
-            ['id' => $activityid, 'sectionid' => $sectionid],
-            '*',
-            MUST_EXIST
-        );
-        $moduledata = json_decode($existing->moduledata, true) ?? [];
-        $completiondata = json_decode($existing->completiondata, true) ?? [];
-        file_prepare_draft_area(
-            $filesdraftitemid,
-            context_system::instance()->id,
-            'tool_bulkcoursestudio',
-            'activityfiles',
-            $activityid
-        );
-        $form->set_data((object) array_merge([
-            'sectionid' => $sectionid,
-            'activityid' => $activityid,
-            'modname' => $existing->modname,
-            'name' => $existing->name,
-            'intro_editor' => ['text' => $moduledata['intro'] ?? '', 'format' => FORMAT_HTML],
-            'embedurl' => $moduledata['embedurl'] ?? '',
-            'activityfiles' => $filesdraftitemid,
-            'advancedsettingsjson' => json_encode(
-                array_diff_key($moduledata, array_flip(['intro', 'embedurl'])),
-                JSON_PRETTY_PRINT
-            ),
-        ], $completiondata));
-    } else {
-        $form->set_data((object) ['sectionid' => $sectionid, 'activityid' => 0, 'activityfiles' => $filesdraftitemid]);
+// Remove an activity (with confirmation).
+if ($removeid) {
+    $activity = $DB->get_record('tool_bulkcoursestudio_activity', ['id' => $removeid], '*', MUST_EXIST);
+    if (!in_array((int) $activity->sectionid, array_map('intval', $sectionids), true)) {
+        throw new moodle_exception('invalidrecord', 'error');
     }
-
-    if ($data = $form->get_data()) {
-        if (native_form_registry::uses_native_form($data->modname)) {
-            // Just enough of a draft row to hand off to
-            // step_activity_settings.php, which collects this module's own
-            // real settings (including its own 'name' field) — the name
-            // typed here is kept only as a placeholder until that happens.
-            $newactivityid = draft_repository::add_or_update_activity(
-                $sectionid,
-                $data->activityid ?: null,
-                $data->modname,
-                $data->name,
-                [],
-                []
-            );
-            redirect(new moodle_url('/admin/tool/bulkcoursestudio/step_activity_settings.php', [
-                'buildid' => $buildid, 'sectionid' => $sectionid, 'modname' => $data->modname, 'activityid' => $newactivityid,
-            ]));
-        }
-
-        $moduledata = ['intro' => $data->intro_editor['text'] ?? ''];
-        if ($data->modname === 'bulkcoursestudio') {
-            $moduledata['embedurl'] = $data->embedurl;
-        }
-        if (!empty($data->advancedsettingsjson)) {
-            $extra = json_decode($data->advancedsettingsjson, true) ?? [];
-            $moduledata = array_merge($moduledata, $extra);
-        }
-
-        $completiondata = ['completionview' => $data->completionview ?? 0];
-        if ($data->modname === 'bulkcoursestudio' && !empty($data->completionminseconds)) {
-            $completiondata['completionminsecondsenabled'] = 1;
-            $completiondata['completionminseconds'] = $data->completionminseconds;
-        }
-
-        $savedactivityid = draft_repository::add_or_update_activity(
-            $sectionid,
-            $data->activityid ?: null,
-            $data->modname,
-            $data->name,
-            $moduledata,
-            $completiondata
-        );
-
-        // Now that the activity definitely has an id, move its files out
-        // of the submitted draft area into this plugin's permanent draft
-        // storage, keyed by that id. build_manager::commit_activity() is
-        // what copies them onward into the real module's own file area —
-        // this plugin never writes into mod_resource/mod_folder's file
-        // area directly.
-        file_save_draft_area_files(
-            $data->activityfiles,
-            context_system::instance()->id,
-            'tool_bulkcoursestudio',
-            'activityfiles',
-            $savedactivityid
-        );
-
-        redirect(new moodle_url('/admin/tool/bulkcoursestudio/step_activities.php', ['buildid' => $buildid]));
+    if ($confirm) {
+        require_sesskey();
+        draft_repository::delete_activity($removeid);
+        redirect($thisurl, get_string('activityremoved', 'tool_bulkcoursestudio'), null, \core\output\notification::NOTIFY_SUCCESS);
     }
+    echo $OUTPUT->header();
+    echo $OUTPUT->confirm(
+        get_string('removeactivityconfirm', 'tool_bulkcoursestudio', format_string($activity->name)),
+        new single_button(
+            new moodle_url($thisurl, ['remove' => $removeid, 'confirm' => 1, 'sesskey' => sesskey()]),
+            get_string('removeactivity', 'tool_bulkcoursestudio'),
+            'post',
+            single_button::BUTTON_DANGER
+        ),
+        $thisurl
+    );
+    echo $OUTPUT->footer();
+    exit;
 }
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('step:activities', 'tool_bulkcoursestudio'));
 
-foreach ($sections as $section) {
-    echo $OUTPUT->heading(format_string($section->name), 4);
-    $activities = draft_repository::get_activities($section->id);
+// Activity type chooser for one section.
+if ($choosesection) {
+    if (!isset($sections[$choosesection])) {
+        throw new moodle_exception('invalidrecord', 'error');
+    }
+    if (empty($build->courseid)) {
+        redirect(new moodle_url('/admin/tool/bulkcoursestudio/step_coursedetails.php', ['buildid' => $buildid]));
+    }
+    $section = $sections[$choosesection];
+    echo ui::begin(
+        'activities',
+        $buildid,
+        get_string('chooseactivitytype', 'tool_bulkcoursestudio'),
+        get_string('chooseactivitytype:sub', 'tool_bulkcoursestudio', format_string($section->name))
+    );
 
-    echo html_writer::start_tag('ul');
-    foreach ($activities as $activity) {
-        $editurl = native_form_registry::uses_native_form($activity->modname)
-            ? new moodle_url('/admin/tool/bulkcoursestudio/step_activity_settings.php', [
-                'buildid' => $buildid, 'sectionid' => $section->id, 'modname' => $activity->modname, 'activityid' => $activity->id,
-            ])
-            : new moodle_url('/admin/tool/bulkcoursestudio/step_activities.php', [
-                'buildid' => $buildid, 'sectionid' => $section->id, 'activityid' => $activity->id,
+    $types = native_form_registry::get_addable_types((int) $build->courseid);
+    $featured = array_intersect_key($types, array_flip(native_form_registry::FEATURED));
+    $others = array_diff_key($types, $featured);
+
+    $rendertiles = function (array $list) use ($OUTPUT, $buildid, $choosesection) {
+        $html = html_writer::start_div('bcs-tilegrid');
+        foreach ($list as $modname => $displayname) {
+            $url = new moodle_url('/admin/tool/bulkcoursestudio/step_activity_settings.php', [
+                'buildid' => $buildid, 'sectionid' => $choosesection, 'modname' => $modname,
             ]);
-        echo html_writer::tag('li', format_string($activity->name) . ' (' . s($activity->modname) . ') '
-            . html_writer::link($editurl, get_string('edit')));
-    }
-    echo html_writer::end_tag('ul');
+            $icon = html_writer::empty_tag('img', [
+                'src' => $OUTPUT->image_url('monologo', 'mod_' . $modname)->out(false),
+                'alt' => '',
+                'class' => 'activityicon',
+            ]);
+            $html .= html_writer::link($url, $icon . html_writer::span(s($displayname)), ['class' => 'bcs-tile']);
+        }
+        return $html . html_writer::end_div();
+    };
 
-    $addurl = new moodle_url('/admin/tool/bulkcoursestudio/step_activities.php', [
-        'buildid' => $buildid, 'sectionid' => $section->id,
-    ]);
-    echo html_writer::link($addurl, get_string('addactivity', 'tool_bulkcoursestudio'), ['class' => 'btn btn-secondary mb-3']);
-
-    if ($sectionid == $section->id) {
-        $form->display();
+    if ($featured) {
+        echo html_writer::tag('div', get_string('chooser:popular', 'tool_bulkcoursestudio'), ['class' => 'bcs-subhead']);
+        echo $rendertiles($featured);
     }
+    if ($others) {
+        echo html_writer::tag('div', get_string('chooser:more', 'tool_bulkcoursestudio'), ['class' => 'bcs-subhead']);
+        echo $rendertiles($others);
+    }
+    echo html_writer::div(
+        html_writer::link($thisurl, get_string('cancel'), ['class' => 'btn btn-secondary']),
+        'bcs-footer'
+    );
+    echo ui::end();
+    echo $OUTPUT->footer();
+    exit;
 }
 
-$nexturl = new moodle_url('/admin/tool/bulkcoursestudio/step_activities.php', ['buildid' => $buildid, 'action' => 'next']);
-echo html_writer::link($nexturl, get_string('step:preview', 'tool_bulkcoursestudio'), ['class' => 'btn btn-primary']);
+// Main view: sections with their activities.
+echo ui::begin(
+    'activities',
+    $buildid,
+    get_string('step:activities', 'tool_bulkcoursestudio'),
+    get_string('stepsub:activities', 'tool_bulkcoursestudio')
+);
+
+if (empty($sections)) {
+    echo html_writer::div(get_string('noactivitysections', 'tool_bulkcoursestudio'), 'bcs-note');
+}
+
+foreach ($sections as $section) {
+    $activities = draft_repository::get_activities($section->id);
+
+    echo html_writer::start_div('bcs-section');
+    echo html_writer::start_div('bcs-section-head');
+    echo html_writer::tag(
+        'h3',
+        format_string($section->name) . html_writer::span(
+            get_string('activitycount', 'tool_bulkcoursestudio', count($activities)),
+            'bcs-section-count'
+        ),
+        ['class' => 'bcs-section-title']
+    );
+    echo html_writer::link(
+        new moodle_url($thisurl, ['choose' => $section->id]),
+        '+ ' . get_string('addactivity', 'tool_bulkcoursestudio'),
+        ['class' => 'btn btn-primary btn-sm']
+    );
+    echo html_writer::end_div();
+
+    if (!$activities) {
+        echo html_writer::div(get_string('noactivities', 'tool_bulkcoursestudio'), 'bcs-empty');
+    }
+    foreach ($activities as $activity) {
+        $editurl = new moodle_url('/admin/tool/bulkcoursestudio/step_activity_settings.php', [
+            'buildid' => $buildid, 'sectionid' => $section->id, 'modname' => $activity->modname, 'activityid' => $activity->id,
+        ]);
+        $typename = get_string_manager()->string_exists('pluginname', 'mod_' . $activity->modname)
+            ? get_string('pluginname', 'mod_' . $activity->modname) : $activity->modname;
+        $icon = html_writer::empty_tag('img', [
+            'src' => $OUTPUT->image_url('monologo', 'mod_' . $activity->modname)->out(false),
+            'alt' => '',
+        ]);
+        echo html_writer::start_div('bcs-activity');
+        echo html_writer::span($icon, 'bcs-activity-icon');
+        echo html_writer::span(
+            format_string($activity->name) . html_writer::span(s($typename), 'bcs-badge'),
+            'bcs-activity-name'
+        );
+        echo html_writer::link($editurl, get_string('edit'), ['class' => 'btn btn-secondary btn-sm']);
+        echo html_writer::link(
+            new moodle_url($thisurl, ['remove' => $activity->id]),
+            get_string('removeactivity', 'tool_bulkcoursestudio'),
+            ['class' => 'btn btn-outline-danger btn-sm']
+        );
+        echo html_writer::end_div();
+    }
+    echo html_writer::end_div();
+}
+
+echo html_writer::start_div('bcs-footer');
+echo html_writer::link(
+    new moodle_url('/admin/tool/bulkcoursestudio/step_sections.php', ['buildid' => $buildid]),
+    get_string('back', 'tool_bulkcoursestudio'),
+    ['class' => 'btn btn-secondary']
+);
+echo html_writer::link(
+    new moodle_url('/admin/tool/bulkcoursestudio/step_preview.php', ['buildid' => $buildid]),
+    get_string('step:preview', 'tool_bulkcoursestudio') . ' →',
+    ['class' => 'btn btn-primary']
+);
+echo html_writer::end_div();
+echo ui::end();
 
 echo $OUTPUT->footer();

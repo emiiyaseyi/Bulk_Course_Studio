@@ -1,0 +1,344 @@
+/* Bulk Course Studio - admin tool styling. Scoped under .bcs so it never leaks. */
+
+.bcs {
+    --bcs-primary: var(--bs-primary, #0f6b4a);
+    --bcs-border: #e3e8ee;
+    --bcs-muted: #64707d;
+    --bcs-soft: #f4f7f9;
+    --bcs-radius: 14px;
+    max-width: 1100px;
+    margin: 0 auto 2rem;
+}
+
+/* ---------- Title block ---------- */
+.bcs .bcs-hero {
+    margin: 0.5rem 0 1.25rem;
+}
+.bcs .bcs-title {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+.bcs .bcs-subtitle {
+    margin: 0.35rem 0 0;
+    color: var(--bcs-muted);
+    font-size: 1rem;
+}
+
+/* ---------- Card ---------- */
+.bcs .bcs-card {
+    background: #fff;
+    border: 1px solid var(--bcs-border);
+    border-radius: var(--bcs-radius);
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 8px 24px rgba(16, 24, 40, 0.04);
+    padding: 1.75rem;
+}
+.bcs .bcs-card + .bcs-card {
+    margin-top: 1.25rem;
+}
+
+/* ---------- Stepper ---------- */
+.bcs .bcs-stepper {
+    display: flex;
+    list-style: none;
+    margin: 0 0 1.25rem;
+    padding: 0;
+    gap: 0.5rem;
+    counter-reset: none;
+}
+.bcs .bcs-step {
+    flex: 1 1 0;
+    min-width: 0;
+    position: relative;
+}
+.bcs .bcs-step::after {
+    content: "";
+    position: absolute;
+    top: 15px;
+    left: calc(50% + 20px);
+    right: calc(-50% + 20px);
+    height: 2px;
+    background: var(--bcs-border);
+}
+.bcs .bcs-step:last-child::after {
+    display: none;
+}
+.bcs .bcs-step.is-done::after {
+    background: var(--bcs-primary);
+}
+.bcs .bcs-step a,
+.bcs .bcs-step > span {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+}
+.bcs .bcs-step-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    background: #fff;
+    border: 2px solid var(--bcs-border);
+    color: var(--bcs-muted);
+    position: relative;
+    z-index: 1;
+}
+.bcs .bcs-step.is-done .bcs-step-dot {
+    background: var(--bcs-primary);
+    border-color: var(--bcs-primary);
+    color: #fff;
+}
+.bcs .bcs-step.is-current .bcs-step-dot {
+    border-color: var(--bcs-primary);
+    color: var(--bcs-primary);
+    box-shadow: 0 0 0 4px rgba(15, 107, 74, 0.15);
+}
+.bcs .bcs-step-label {
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    text-align: center;
+    color: var(--bcs-muted);
+}
+.bcs .bcs-step.is-current .bcs-step-label,
+.bcs .bcs-step.is-done .bcs-step-label {
+    color: inherit;
+    font-weight: 600;
+}
+@media (max-width: 720px) {
+    .bcs .bcs-step-label {
+        display: none;
+    }
+}
+
+/* ---------- Action rows & buttons ---------- */
+.bcs .bcs-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0 0 1.5rem;
+}
+.bcs .bcs-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--bcs-border);
+}
+.bcs .btn {
+    border-radius: 10px;
+    padding: 0.55rem 1.1rem;
+    font-weight: 600;
+}
+
+/* ---------- Dashboard tiles ---------- */
+.bcs .bcs-startgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.bcs .bcs-startcard {
+    display: block;
+    padding: 1.25rem;
+    border: 1px solid var(--bcs-border);
+    border-radius: var(--bcs-radius);
+    background: #fff;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+.bcs .bcs-startcard:hover {
+    transform: translateY(-2px);
+    border-color: var(--bcs-primary);
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
+    text-decoration: none;
+    color: inherit;
+}
+.bcs .bcs-startcard.is-primary {
+    background: var(--bcs-primary);
+    border-color: var(--bcs-primary);
+    color: #fff;
+}
+.bcs .bcs-startcard.is-primary:hover {
+    color: #fff;
+}
+.bcs .bcs-startcard-icon {
+    font-size: 1.6rem;
+    line-height: 1;
+    margin-bottom: 0.6rem;
+}
+.bcs .bcs-startcard-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+.bcs .bcs-startcard-text {
+    margin-top: 0.2rem;
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+/* ---------- Section + activity list ---------- */
+.bcs .bcs-section {
+    border: 1px solid var(--bcs-border);
+    border-radius: var(--bcs-radius);
+    margin-bottom: 1.1rem;
+    overflow: hidden;
+    background: #fff;
+}
+.bcs .bcs-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.9rem 1.1rem;
+    background: var(--bcs-soft);
+    border-bottom: 1px solid var(--bcs-border);
+}
+.bcs .bcs-section-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+.bcs .bcs-section-count {
+    color: var(--bcs-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+.bcs .bcs-activity {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.75rem 1.1rem;
+    border-bottom: 1px solid var(--bcs-border);
+}
+.bcs .bcs-activity:last-child {
+    border-bottom: 0;
+}
+.bcs .bcs-activity-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: var(--bcs-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 36px;
+}
+.bcs .bcs-activity-icon img {
+    width: 22px;
+    height: 22px;
+}
+.bcs .bcs-activity-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 600;
+}
+.bcs .bcs-badge {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: var(--bcs-soft);
+    color: var(--bcs-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+}
+.bcs .bcs-empty {
+    padding: 1.25rem 1.1rem;
+    color: var(--bcs-muted);
+}
+
+/* ---------- Activity type chooser ---------- */
+.bcs .bcs-tilegrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.9rem;
+}
+.bcs .bcs-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.6rem;
+    min-height: 120px;
+    padding: 1rem 0.6rem;
+    border: 1px solid var(--bcs-border);
+    border-radius: var(--bcs-radius);
+    background: #fff;
+    text-decoration: none;
+    color: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+.bcs .bcs-tile:hover {
+    transform: translateY(-2px);
+    border-color: var(--bcs-primary);
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
+    text-decoration: none;
+    color: inherit;
+}
+.bcs .bcs-tile img {
+    width: 36px;
+    height: 36px;
+}
+.bcs .bcs-subhead {
+    margin: 1.5rem 0 0.75rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bcs-muted);
+    font-weight: 700;
+}
+
+/* ---------- Forms inside the wizard ---------- */
+.bcs .mform {
+    max-width: 100%;
+}
+.bcs .mform fieldset {
+    border: 1px solid var(--bcs-border);
+    border-radius: 12px;
+    padding: 0.5rem 1.25rem 1rem;
+    margin-bottom: 1rem;
+    background: #fff;
+}
+.bcs .mform .fcontainer {
+    padding-top: 0.5rem;
+}
+.bcs .mform .fitem {
+    margin-bottom: 1rem;
+}
+.bcs .mform .form-control,
+.bcs .mform .custom-select {
+    border-radius: 9px;
+}
+.bcs .mform input[type="text"].form-control {
+    max-width: 640px;
+    width: 100%;
+}
+.bcs .mform .fp-restrictions,
+.bcs .mform .form-text {
+    color: var(--bcs-muted);
+}
+
+/* ---------- Overview table spacing ---------- */
+.bcs .generaltable {
+    margin: 0;
+}
+.bcs .bcs-note {
+    background: var(--bcs-soft);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    color: var(--bcs-muted);
+    margin-bottom: 1rem;
+}

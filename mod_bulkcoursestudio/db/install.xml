@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/bulkcoursestudio/db" VERSION="2026111700" COMMENT="XMLDB file for mod_bulkcoursestudio"
+<XMLDB PATH="mod/bulkcoursestudio/db" VERSION="2026111701" COMMENT="XMLDB file for mod_bulkcoursestudio"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 >
   <TABLES>
@@ -12,7 +12,8 @@
         <FIELD NAME="intro" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
         <FIELD NAME="embedurl" TYPE="char" LENGTH="1333" NOTNULL="true" SEQUENCE="false" COMMENT="The pasted Vimeo/YouTube/Drive/OneDrive URL"/>
-        <FIELD NAME="provider" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="vimeo|youtube|gdrive|onedrive — resolved at save time"/>
+        <FIELD NAME="provider" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="vimeo|youtube|gdrive|onedrive|upload — resolved at save time"/>
+        <FIELD NAME="mediasource" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="url" SEQUENCE="false" COMMENT="url = pasted link, upload = uploaded video file"/>
         <FIELD NAME="completionview" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Mark complete when the modal is opened"/>
         <FIELD NAME="completionminseconds" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Optional: require N seconds of playback for completion"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>

@@ -39,6 +39,7 @@ require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->libdir . '/filelib.php');
 
 use tool_bulkcoursestudio\draft_repository;
+use tool_bulkcoursestudio\output\ui;
 use tool_bulkcoursestudio\form\matchfiles_form;
 
 $buildid = required_param('buildid', PARAM_INT);
@@ -127,7 +128,7 @@ if ($form->is_cancelled()) {
 }
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('step:matchfiles', 'tool_bulkcoursestudio'));
+echo ui::begin('', (int) $buildid, get_string('step:matchfiles', 'tool_bulkcoursestudio'));
 echo $OUTPUT->notification(get_string('matchfiles:info', 'tool_bulkcoursestudio'), 'info');
 
 $table = new html_table();
@@ -160,4 +161,5 @@ echo html_writer::link(
     ['class' => 'btn btn-link']
 );
 
+echo ui::end();
 echo $OUTPUT->footer();

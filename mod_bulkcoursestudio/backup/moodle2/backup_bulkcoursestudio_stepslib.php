@@ -40,7 +40,7 @@ class backup_bulkcoursestudio_activity_structure_step extends backup_activity_st
         $userinfo = $this->get_setting_value('userinfo');
 
         $bulkcoursestudio = new backup_nested_element('bulkcoursestudio', ['id'], [
-            'name', 'intro', 'introformat', 'embedurl', 'provider',
+            'name', 'intro', 'introformat', 'embedurl', 'provider', 'mediasource',
             'completionview', 'completionminseconds', 'timecreated', 'timemodified',
         ]);
 
@@ -60,6 +60,8 @@ class backup_bulkcoursestudio_activity_structure_step extends backup_activity_st
         }
 
         $bulkcoursestudio->annotate_files('mod_bulkcoursestudio', 'intro', null);
+        $bulkcoursestudio->annotate_files('mod_bulkcoursestudio', 'mediafile', null);
+        $bulkcoursestudio->annotate_files('mod_bulkcoursestudio', 'resources', null);
 
         return $this->prepare_activity_structure($bulkcoursestudio);
     }

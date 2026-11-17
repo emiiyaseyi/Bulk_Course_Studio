@@ -50,3 +50,17 @@ $string['privacy:metadata:progress'] = 'Your watch progress on a Bulk Course Stu
 $string['privacy:metadata:progress:userid'] = 'The ID of the user whose progress this is.';
 $string['privacy:metadata:progress:secondswatched'] = 'How many seconds of the video this user has watched.';
 $string['privacy:metadata:progress:timemodified'] = 'When this progress record was last updated.';
+
+// Added in v0.2.0: upload a video file, attach resources.
+$string['mediasource'] = 'Video source';
+$string['mediasource:url'] = 'Add a link (YouTube, Vimeo, Google Drive, OneDrive)';
+$string['mediasource:upload'] = 'Upload a video file';
+$string['mediasource:uploadnotice'] = 'Upload an MP4, WebM, M4V, MOV or 3GP file. Large videos use a lot of server storage, so a link is better for long recordings.';
+$string['mediafile'] = 'Video file';
+$string['mediafilerequired'] = 'Please upload a video file.';
+$string['overview'] = 'Overview';
+$string['resourcesheader'] = 'Resources';
+$string['resourcesdesc'] = 'Attach supporting files (slides, worksheets, notes) that learners can download alongside the video.';
+$string['resourcesfiles'] = 'Resource files';
+$string['resourcesview'] = 'Resources';
+$string['opencomputerfile'] = 'Open video';

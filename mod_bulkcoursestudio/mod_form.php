@@ -14,48 +14,137 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
+/**
+ * Settings form for the Bulk Course Studio embed activity.
+ *
+ * Like Edwiser's video activity, the teacher chooses a media source and
+ * only the matching fields appear: a pasted link (YouTube, Vimeo, Google
+ * Drive, OneDrive/SharePoint) or an uploaded video file. Supporting
+ * resources can be attached either way. Moodle's standard sections
+ * (restrict access, completion, tags, competencies) come from
+ * standard_coursemodule_elements().
+ *
+ * @package    mod_bulkcoursestudio
+ * @copyright  2026 Bulk Course Studio
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/course/moodleform_mod.php');
 
 /**
- * Settings form for a single mod_bulkcoursestudio instance. This is the
- * exact native mod_form.php that tool_bulkcoursestudio's wizard embeds
- * for this module type (spec §3.1 step 4) — no bespoke form is kept in
- * the tool_ component for this activity, by design.
+ * Settings form for mod_bulkcoursestudio.
  *
  * @package    mod_bulkcoursestudio
  * @copyright  2026 Bulk Course Studio
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_bulkcoursestudio_mod_form extends moodleform_mod {
+    /** @var string[] Video file types accepted for upload. */
+    const VIDEO_TYPES = ['.mp4', '.webm', '.m4v', '.mov', '.3gp'];
+
     /**
      * Build the form fields.
      */
     public function definition() {
         $mform = $this->_form;
 
-        $mform->addElement('text', 'name', get_string('activityname', 'mod_bulkcoursestudio'));
+        $mform->addElement('header', 'mediaheader', get_string('embedsection', 'mod_bulkcoursestudio'));
+
+        $mform->addElement('text', 'name', get_string('activityname', 'mod_bulkcoursestudio'), ['size' => '64']);
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
 
-        $this->standard_intro_elements();
-
-        $mform->addElement('header', 'embedsection', get_string('embedsection', 'mod_bulkcoursestudio'));
+        $mform->addElement('select', 'mediasource', get_string('mediasource', 'mod_bulkcoursestudio'), [
+            'url' => get_string('mediasource:url', 'mod_bulkcoursestudio'),
+            'upload' => get_string('mediasource:upload', 'mod_bulkcoursestudio'),
+        ]);
+        $mform->setDefault('mediasource', 'url');
 
         $mform->addElement('text', 'embedurl', get_string('embedurl', 'mod_bulkcoursestudio'), ['size' => '64']);
         $mform->setType('embedurl', PARAM_URL);
-        $mform->addRule('embedurl', null, 'required', null, 'client');
         $mform->addHelpButton('embedurl', 'embedurl', 'mod_bulkcoursestudio');
+        $mform->hideIf('embedurl', 'mediasource', 'neq', 'url');
 
-        // TODO MDL-0: AJAX-driven live preview and sharing notice
-        // (embed_resolver::get_sharing_notice()) rendered below this field
-        // via an AMD module, both in this native settings form and inside
-        // the tool_ wizard's embedded copy of it.
-        // wizard's embedded copy of it.
+        $mform->addElement('static', 'embedurlnotice', '', get_string('embednotice:sharingrequired', 'mod_bulkcoursestudio'));
+        $mform->hideIf('embedurlnotice', 'mediasource', 'neq', 'url');
+
+        $mform->addElement('static', 'uploadnotice', '', get_string('mediasource:uploadnotice', 'mod_bulkcoursestudio'));
+        $mform->hideIf('uploadnotice', 'mediasource', 'neq', 'upload');
+
+        $mform->addElement('filemanager', 'mediafile', get_string('mediafile', 'mod_bulkcoursestudio'), null, [
+            'subdirs' => 0,
+            'maxfiles' => 1,
+            'accepted_types' => self::VIDEO_TYPES,
+        ]);
+        $mform->hideIf('mediafile', 'mediasource', 'neq', 'upload');
+
+        $mform->addElement('header', 'overviewheader', get_string('overview', 'mod_bulkcoursestudio'));
+        $this->standard_intro_elements(get_string('overview', 'mod_bulkcoursestudio'));
+
+        $mform->addElement('header', 'resourcesheader', get_string('resourcesheader', 'mod_bulkcoursestudio'));
+        $mform->addElement('static', 'resourcesdesc', '', get_string('resourcesdesc', 'mod_bulkcoursestudio'));
+        $mform->addElement('filemanager', 'resources', get_string('resourcesfiles', 'mod_bulkcoursestudio'), null, [
+            'subdirs' => 0,
+            'maxfiles' => -1,
+            'accepted_types' => '*',
+        ]);
 
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();
+    }
+
+    /**
+     * Prepare the file manager draft areas (existing files when editing).
+     *
+     * @param array $defaultvalues
+     */
+    public function data_preprocessing(&$defaultvalues) {
+        parent::data_preprocessing($defaultvalues);
+
+        $contextid = null;
+        if (!empty($this->current->coursemodule)) {
+            $contextid = context_module::instance($this->current->coursemodule)->id;
+        }
+        foreach (['mediafile', 'resources'] as $area) {
+            $draftitemid = file_get_submitted_draft_itemid($area);
+            file_prepare_draft_area($draftitemid, $contextid, 'mod_bulkcoursestudio', $area, 0, ['subdirs' => 0]);
+            $defaultvalues[$area] = $draftitemid;
+        }
+
+        if (empty($defaultvalues['mediasource'])) {
+            $defaultvalues['mediasource'] = 'url';
+        }
+    }
+
+    /**
+     * Validate the submitted data: a link or a video file is required,
+     * depending on the chosen source.
+     *
+     * @param array $data
+     * @param array $files
+     * @return array errors keyed by field name
+     */
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+
+        if (($data['mediasource'] ?? 'url') === 'upload') {
+            $info = file_get_draft_area_info($data['mediafile']);
+            if (empty($info['filecount'])) {
+                $errors['mediafile'] = get_string('mediafilerequired', 'mod_bulkcoursestudio');
+            }
+        } else if (empty($data['embedurl'])) {
+            $errors['embedurl'] = get_string('required');
+        } else {
+            $provider = \mod_bulkcoursestudio\embed_resolver::detect_provider($data['embedurl']);
+            if ($provider === '' ||
+                    \mod_bulkcoursestudio\embed_resolver::to_embed_src($data['embedurl'], $provider) === '') {
+                $errors['embedurl'] = get_string('embedunresolvable', 'mod_bulkcoursestudio');
+            }
+        }
+
+        return $errors;
     }
 
     /**

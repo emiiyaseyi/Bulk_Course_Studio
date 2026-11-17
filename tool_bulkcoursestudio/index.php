@@ -27,6 +27,7 @@ require(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 
 use tool_bulkcoursestudio\draft_repository;
+use tool_bulkcoursestudio\output\ui;
 
 admin_externalpage_setup('tool_bulkcoursestudio', '', null, '', ['pagelayout' => 'admin']);
 require_capability('tool/bulkcoursestudio:manage', context_system::instance());
@@ -35,57 +36,37 @@ $PAGE->set_url('/admin/tool/bulkcoursestudio/index.php');
 $PAGE->set_title(get_string('pluginname', 'tool_bulkcoursestudio'));
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('pluginname', 'tool_bulkcoursestudio'));
 
-echo html_writer::div(
-    html_writer::link(
-        new moodle_url('/admin/tool/bulkcoursestudio/overview.php'),
-        get_string('overview:link', 'tool_bulkcoursestudio')
-    ),
-    'mb-3'
-);
+echo ui::begin('', 0, get_string('pluginname', 'tool_bulkcoursestudio'), get_string('dashboard:sub', 'tool_bulkcoursestudio'));
 
-echo html_writer::start_div('d-flex', ['style' => 'gap: 0.5rem;']);
-echo html_writer::link(
-    new moodle_url('/admin/tool/bulkcoursestudio/step_coursedetails.php'),
-    get_string('startnewbuild', 'tool_bulkcoursestudio'),
-    ['class' => 'btn btn-primary']
-);
-
+$cards = [];
+$cards[] = ['/admin/tool/bulkcoursestudio/step_coursedetails.php', '＋', 'startnewbuild', 'startnewbuild:desc', true];
 if (has_capability('tool/bulkcoursestudio:bulkupload', context_system::instance())) {
+    $cards[] = ['/admin/tool/bulkcoursestudio/excel_download.php', '⬇', 'downloadtemplate', 'downloadtemplate:desc', false];
+    $cards[] = ['/admin/tool/bulkcoursestudio/excel_upload.php', '⬆', 'uploadtemplate', 'uploadtemplate:desc', false];
+}
+$cards[] = ['/admin/tool/bulkcoursestudio/edit_course.php', '✎', 'editexisting', 'editexisting:desc', false];
+
+echo html_writer::start_div('bcs-startgrid');
+foreach ($cards as [$path, $glyph, $titlekey, $desckey, $primary]) {
     echo html_writer::link(
-        new moodle_url('/admin/tool/bulkcoursestudio/excel_download.php'),
-        get_string('downloadtemplate', 'tool_bulkcoursestudio'),
-        ['class' => 'btn btn-secondary']
-    );
-    echo html_writer::link(
-        new moodle_url('/admin/tool/bulkcoursestudio/excel_upload.php'),
-        get_string('uploadtemplate', 'tool_bulkcoursestudio'),
-        ['class' => 'btn btn-secondary']
+        new moodle_url($path),
+        html_writer::div($glyph, 'bcs-startcard-icon')
+        . html_writer::div(get_string($titlekey, 'tool_bulkcoursestudio'), 'bcs-startcard-title')
+        . html_writer::div(get_string($desckey, 'tool_bulkcoursestudio'), 'bcs-startcard-text'),
+        ['class' => 'bcs-startcard' . ($primary ? ' is-primary' : '')]
     );
 }
-echo html_writer::link(
-    new moodle_url('/admin/tool/bulkcoursestudio/edit_course.php'),
-    get_string('editexisting', 'tool_bulkcoursestudio'),
-    ['class' => 'btn btn-secondary']
-);
 echo html_writer::end_div();
 
-echo $OUTPUT->heading(get_string('mydrafts', 'tool_bulkcoursestudio'), 3);
+echo html_writer::tag('h3', get_string('mydrafts', 'tool_bulkcoursestudio'), ['class' => 'bcs-subhead']);
 
 $builds = draft_repository::get_my_builds($USER->id);
 
 if (empty($builds)) {
-    echo $OUTPUT->notification(get_string('nodrafts', 'tool_bulkcoursestudio'), 'info');
+    echo html_writer::div(get_string('nodrafts', 'tool_bulkcoursestudio'), 'bcs-note');
 } else {
-    $table = new html_table();
-    $table->head = [
-        get_string('fullnamecourse'),
-        get_string('status'),
-        get_string('lastmodified'),
-        '',
-    ];
-
+    echo html_writer::start_div('bcs-section');
     foreach ($builds as $build) {
         $coursedata = json_decode($build->coursedata, true) ?? [];
 
@@ -97,36 +78,52 @@ if (empty($builds)) {
             $status = get_string('statusdraft', 'tool_bulkcoursestudio');
         }
 
-        // Re-opening the wizard is always safe here, published or not —
-        // commit() never touches visibility, only publish() does — so
-        // every status gets a direct edit link, not just in-progress drafts.
+        // Re-opening the wizard is always safe here, published or not:
+        // commit() never touches visibility, only publish() does.
         $editurl = new moodle_url('/admin/tool/bulkcoursestudio/step_coursedetails.php', ['buildid' => $build->id]);
-        $links = html_writer::link(
+        $actions = html_writer::link(
             $editurl,
             $build->status === 'published' || $build->status === 'scheduled'
                 ? get_string('editexisting:editbutton', 'tool_bulkcoursestudio')
-                : get_string('continuedraft', 'tool_bulkcoursestudio')
+                : get_string('continuedraft', 'tool_bulkcoursestudio'),
+            ['class' => 'btn btn-primary btn-sm']
         );
         if (!empty($build->courseid)) {
-            $links .= ' ' . html_writer::link(
+            $actions .= ' ' . html_writer::link(
                 new moodle_url('/course/view.php', ['id' => $build->courseid]),
-                get_string('view')
+                get_string('view'),
+                ['class' => 'btn btn-secondary btn-sm']
             );
         }
-        $links .= ' ' . html_writer::link(
+        $actions .= ' ' . html_writer::link(
             new moodle_url('/admin/tool/bulkcoursestudio/discard_build.php', ['buildid' => $build->id]),
-            get_string('discardbuild', 'tool_bulkcoursestudio')
+            get_string('discardbuild', 'tool_bulkcoursestudio'),
+            ['class' => 'btn btn-outline-danger btn-sm']
         );
 
-        $table->data[] = [
-            format_string($coursedata['fullname'] ?? '(untitled)'),
-            $status,
-            userdate($build->timemodified),
-            $links,
-        ];
+        echo html_writer::div(
+            html_writer::span(
+                format_string($coursedata['fullname'] ?? '(untitled)')
+                . html_writer::span(s($status), 'bcs-badge')
+                . html_writer::div(
+                    get_string('lastmodified') . ': ' . userdate($build->timemodified),
+                    'text-muted small fw-normal font-weight-normal'
+                ),
+                'bcs-activity-name'
+            ) . html_writer::span($actions),
+            'bcs-activity'
+        );
     }
-
-    echo html_writer::table($table);
+    echo html_writer::end_div();
 }
 
+echo html_writer::div(
+    html_writer::link(
+        new moodle_url('/admin/tool/bulkcoursestudio/overview.php'),
+        get_string('overview:link', 'tool_bulkcoursestudio')
+    ),
+    'mt-3'
+);
+
+echo ui::end();
 echo $OUTPUT->footer();

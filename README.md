@@ -2,7 +2,7 @@
 
 **Build complete Moodle courses in minutes, not hours.** Bulk Course Studio lets an administrator create a whole course (details, sections, activities, uploaded files and embedded videos) through a guided wizard or a single Excel upload, preview the result, and then save it, publish it, or schedule it for later.
 
-> **Status: alpha (v0.1.0).** The code is complete for the v1 scope, but it has **not yet been installed or tested on a live Moodle site**. Treat it as a test-site release until the [live-instance checklist](docs/live-instance-verification-checklist.md) has been worked through.
+> **Status: alpha (v0.2.0).** The code is complete for the v1 scope, but it has **not yet been installed or tested on a live Moodle site**. Treat it as a test-site release until the [live-instance checklist](docs/live-instance-verification-checklist.md) has been worked through.
 
 Requires **Moodle 4.5 or later**.
 
@@ -21,10 +21,11 @@ The admin tool works on its own. The activity module is optional, and is only ne
 
 ### Admin tool (`tool_bulkcoursestudio`)
 
-- **Guided wizard.** Steps for course details, format, sections, activities and a preview before anything is saved.
+- **Guided wizard.** A numbered progress bar takes you through course details, format, sections, activities and a preview before anything is saved.
+- **Every activity type, with its real settings.** "Add activity" opens a tile chooser of every activity installed on your site. Picking one shows that activity's own form (URL, file upload, embed code, grading and so on), including Moodle's **restrict access**, **activity completion**, **tags** and **competencies** sections.
+- **Course tags and competencies.** Set them on the course details step.
 - **Excel bulk upload.** Download a three-sheet template (Course, Sections, Activities), fill it in and upload it. It feeds the same draft and preview as the wizard.
 - **File matching.** A screen to attach uploaded files to any File or Folder activity that names a local filename.
-- **Native activity settings.** For assign, quiz, forum, page, url, resource and folder, the wizard embeds the activity's real Moodle settings form. Other activity types use a generic form with an "Advanced settings (JSON)" fallback.
 - **Preview before commit.** Both paths share one preview and one commit engine. The engine refuses to write if the preview has errors.
 - **Save, publish or schedule.** New courses are created hidden. You can publish them immediately or schedule publishing through a Moodle scheduled task.
 - **Edit existing builds.** Search committed builds and reopen them in the wizard. Re-saving updates the same activities instead of duplicating them.
@@ -34,7 +35,8 @@ The admin tool works on its own. The activity module is optional, and is only ne
 
 ### Embed activity (`mod_bulkcoursestudio`)
 
-- Works with **YouTube, Vimeo, Google Drive and OneDrive/SharePoint** links.
+- Works with **YouTube, Vimeo, Google Drive and OneDrive/SharePoint** links, or an **uploaded video file** (MP4, WebM, M4V, MOV, 3GP).
+- Teachers can attach **resource files** (slides, worksheets) that students download from the activity page.
 - Shows a launch button on the course page and plays the video in a **pop-up modal**.
 - Supports **view-based completion** and an optional **"minimum seconds watched"** rule.
 - Includes full **backup and restore** support and the Privacy API.
@@ -43,7 +45,7 @@ The admin tool works on its own. The activity module is optional, and is only ne
 
 ### From a ZIP (recommended for testing)
 
-1. Zip each plugin folder so the archive's root folder is named `bulkcoursestudio`.
+1. Build the ZIPs with `python tools/build_zips.py`. It bumps each plugin's version number, so Moodle treats a reinstall as an upgrade, and writes both ZIPs to `dist/` with the root folder named `bulkcoursestudio`.
 2. In Moodle, go to **Site administration → Plugins → Install plugins** and upload `tool_bulkcoursestudio` first. Then upload `mod_bulkcoursestudio` if you want video embeds.
 3. Follow the on-screen upgrade prompts.
 
@@ -82,7 +84,7 @@ This was an internal review, not an independent penetration test.
 ## Known gaps
 
 - **Not tested on a live Moodle site.** The unit tests for the build engine, Excel parser and embed resolver exist but have not been run. PHP and JavaScript syntax checks do pass.
-- **Hide/delete for sections and activities has no screen yet.** The engine function (`build_manager::remove_with_choice()`) exists, but nothing in the wizard calls it.
+- **Hide/delete choice for sections and activities.** The wizard can remove an activity, but the hide-instead-of-delete option (`build_manager::remove_with_choice()`) still has no screen.
 - **No Behat (UI) tests** for the wizard.
 - **The AMD JavaScript build was made with `terser`, not Moodle's Grunt.** Re-run the real Grunt build on a development install.
 - **Placeholder icons** in both plugins.
