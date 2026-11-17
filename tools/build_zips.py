@@ -1,4 +1,4 @@
-"""Build the two Moodle install ZIPs into dist/.
+"""Build the two Moodle install ZIPs into dist/ (and copy them to the project root).
 
 Each run first bumps $plugin->version in both version.php files, so Moodle
 always sees the reinstalled ZIP as an upgrade. Use --no-bump to rebuild the
@@ -47,6 +47,9 @@ def build(plugin):
                 rel = os.path.relpath(full, src).replace(os.sep, '/')
                 # Moodle expects the ZIP root folder to be the plugin name.
                 archive.write(full, 'bulkcoursestudio/' + rel)
+    # Also keep a copy next to the project folders, so the ZIPs you pick up are never stale.
+    import shutil
+    shutil.copyfile(out, os.path.join(ROOT, plugin + '.zip'))
     return out
 
 
