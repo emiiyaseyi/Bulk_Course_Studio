@@ -27,7 +27,7 @@ namespace mod_bulkcoursestudio;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \mod_bulkcoursestudio\embed_resolver
  */
-final class embed_resolver_test extends \basic_testcase {
+final class embed_resolver_test extends \advanced_testcase {
     public function test_detect_provider_youtube(): void {
         $this->assertSame(
             embed_resolver::PROVIDER_YOUTUBE,
