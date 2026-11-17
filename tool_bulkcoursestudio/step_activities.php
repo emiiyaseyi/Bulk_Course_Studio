@@ -132,6 +132,23 @@ if ($toggleid) {
     );
 }
 
+// Rename an activity.
+$renameid = optional_param('rename', 0, PARAM_INT);
+$newname = optional_param('newname', null, PARAM_TEXT);
+if ($renameid) {
+    $renaming = $DB->get_record('tool_bulkcoursestudio_activity', ['id' => $renameid], '*', MUST_EXIST);
+    if (!in_array((int) $renaming->sectionid, array_map('intval', $sectionids), true)) {
+        throw new moodle_exception('invalidrecord', 'error');
+    }
+    if ($newname !== null && confirm_sesskey()) {
+        $newname = trim($newname);
+        if ($newname !== '') {
+            draft_repository::rename_activity($renameid, $newname);
+        }
+        redirect($thisurl, get_string('renamed', 'tool_bulkcoursestudio'), null, \core\output\notification::NOTIFY_SUCCESS);
+    }
+}
+
 echo $OUTPUT->header();
 
 // Activity type chooser for one section.
@@ -235,12 +252,32 @@ foreach ($sections as $section) {
         echo html_writer::start_div('bcs-activity');
         echo html_writer::span($icon, 'bcs-activity-icon');
         $hidden = draft_repository::is_activity_hidden($activity);
+        if ($renameid == $activity->id) {
+            // The rename form sits inside the row opened above, beside the icon.
+            echo html_writer::start_tag('form', ['method' => 'post', 'action' => $thisurl->out(false), 'class' => 'd-flex flex-grow-1', 'style' => 'gap:.5rem;']);
+            echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+            echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'rename', 'value' => $activity->id]);
+            echo html_writer::empty_tag('input', [
+                'type' => 'text', 'name' => 'newname', 'value' => $activity->name, 'class' => 'form-control bcs-activity-name',
+                'required' => 'required', 'autofocus' => 'autofocus',
+            ]);
+            echo html_writer::tag('button', get_string('save'), ['type' => 'submit', 'class' => 'btn btn-primary btn-sm']);
+            echo html_writer::link($thisurl, get_string('cancel'), ['class' => 'btn btn-secondary btn-sm']);
+            echo html_writer::end_tag('form');
+            echo html_writer::end_div();
+            continue;
+        }
         echo html_writer::span(
             format_string($activity->name) . html_writer::span(s($typename), 'bcs-badge')
             . ($hidden ? html_writer::span(get_string('hiddenbadge', 'tool_bulkcoursestudio'), 'bcs-badge') : ''),
             'bcs-activity-name' . ($hidden ? ' text-muted' : '')
         );
         echo html_writer::link($editurl, get_string('edit'), ['class' => 'btn btn-secondary btn-sm']);
+        echo html_writer::link(
+            new moodle_url($thisurl, ['rename' => $activity->id]),
+            get_string('rename', 'tool_bulkcoursestudio'),
+            ['class' => 'btn btn-secondary btn-sm']
+        );
         echo html_writer::link(
             new moodle_url($thisurl, ['toggle' => $activity->id, 'sesskey' => sesskey()]),
             get_string($hidden ? 'showactivity' : 'hideactivity', 'tool_bulkcoursestudio'),

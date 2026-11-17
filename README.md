@@ -2,7 +2,7 @@
 
 **Build complete Moodle courses in minutes, not hours.** Bulk Course Studio lets an administrator create a whole course (details, sections, activities, uploaded files and embedded videos) through a guided wizard or a single Excel upload, preview the result, and then save it, publish it, or schedule it for later.
 
-> **Status: alpha, release v1.3.** All releases are v1; the number after the dot goes up with each update (v1.1, v1.2, ...). The code is complete for the v1 scope, but it has **not yet been installed or tested on a live Moodle site**. Treat it as a test-site release until the [live-instance checklist](docs/live-instance-verification-checklist.md) has been worked through.
+> **Status: alpha, release v1.4.** All releases are v1; the number after the dot goes up with each update (v1.1, v1.2, ...). The code is complete for the v1 scope, but it has **not yet been installed or tested on a live Moodle site**. Treat it as a test-site release until the [live-instance checklist](docs/live-instance-verification-checklist.md) has been worked through.
 
 Requires **Moodle 4.5 or later**.
 
@@ -28,7 +28,7 @@ The admin tool works on its own. The activity module is optional, and is only ne
 - **File matching.** A screen to attach uploaded files to any File or Folder activity that names a local filename.
 - **Preview before commit.** Both paths share one preview and one commit engine. The engine refuses to write if the preview has errors.
 - **Save, publish or schedule.** New courses are created hidden. You can publish them immediately or schedule publishing through a Moodle scheduled task.
-- **Excel extras.** Besides the basics, the template has columns for course tags and competencies, and for each activity: visible or hidden, tags, competencies, open and close dates (restrict access), and completion (none, manual, view, or percent of the video watched).
+- **Excel extras.** Besides the basics, the template has columns for course tags and competencies, and for each activity: visible or hidden, tags, competencies, open and close dates (restrict access), and completion (none, manual, view, percent of the video watched, or minutes on the activity).
 - **Edit existing builds.** Search committed builds and reopen them in the wizard. Re-saving updates the same activities instead of duplicating them.
 - **Discard.** Abandoning an unpublished build soft-deletes its hidden course to the recycle bin. A published course is never touched.
 - **Core APIs only.** The engine uses Moodle's own course, module, completion and file APIs. It never writes to core database tables directly, so a built course looks the same as one made by hand.
@@ -37,6 +37,7 @@ The admin tool works on its own. The activity module is optional, and is only ne
 ### Embed activity (`mod_bulkcoursestudio`)
 
 - Works with **YouTube, Vimeo, Loom, Google Drive and OneDrive/SharePoint** links, a **direct link to a video file**, or an **uploaded video file** (MP4, WebM, M4V, MOV, 3GP).
+- **Time-on-activity completion:** require learners to keep the video open for N minutes. Works for every source.
 - **Watch-percentage completion:** require learners to watch, say, 80% of the video. Works for uploads, direct links, YouTube and Vimeo.
 - **Resume playback:** learners restart where they stopped, and their progress is saved.
 - **Auto-advance:** when the video ends, a short countdown takes the learner to the next activity.
@@ -95,6 +96,8 @@ This was an internal review, not an independent penetration test.
 - **The AMD JavaScript build was made with `terser`, not Moodle's Grunt.** Re-run the real Grunt build on a development install.
 - **Placeholder icons** in both plugins.
 - **Deprecated-API checks** against Moodle 4.5 and 5.x are still outstanding.
+- **OneDrive/SharePoint:** a normal share link cannot be shown inside Moodle (Microsoft blocks it). Use Share, then Embed, and paste the embed link, or upload the video.
+- **Document completion** (scroll to the end of a PDF) is not built yet.
 - **Percentage tracking** does not work for Google Drive, OneDrive or Loom links, because those players do not share playback progress. Use view completion for them.
 
 ## Documentation

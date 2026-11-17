@@ -327,6 +327,37 @@ class draft_repository {
     }
 
     /**
+     * Rename a draft section.
+     *
+     * @param int $sectionid
+     * @param string $name
+     */
+    public static function rename_section(int $sectionid, string $name): void {
+        global $DB;
+        $DB->set_field('tool_bulkcoursestudio_section', 'name', $name, ['id' => $sectionid]);
+        $DB->set_field('tool_bulkcoursestudio_section', 'timemodified', time(), ['id' => $sectionid]);
+    }
+
+    /**
+     * Rename a draft activity, and the real course module it created (if any)
+     * through core's own set_coursemodule_name().
+     *
+     * @param int $activityid
+     * @param string $name
+     */
+    public static function rename_activity(int $activityid, string $name): void {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $activity = $DB->get_record('tool_bulkcoursestudio_activity', ['id' => $activityid], '*', MUST_EXIST);
+        $DB->set_field('tool_bulkcoursestudio_activity', 'name', $name, ['id' => $activityid]);
+        $DB->set_field('tool_bulkcoursestudio_activity', 'timemodified', time(), ['id' => $activityid]);
+        if (!empty($activity->committedcmid) && $DB->record_exists('course_modules', ['id' => $activity->committedcmid])) {
+            set_coursemodule_name($activity->committedcmid, $name);
+        }
+    }
+
+    /**
      * Whether a draft activity is set to be hidden from learners.
      *
      * @param \stdClass $activity draft activity row

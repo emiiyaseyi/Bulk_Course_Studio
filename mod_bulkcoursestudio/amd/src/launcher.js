@@ -80,14 +80,14 @@ define([
      * @return {Object}
      */
     var createTracker = function(config) {
-        var state = {duration: 0, current: 0, furthest: 0, lastSent: 0, enabled: config.tracked};
+        var state = {duration: 0, current: 0, furthest: 0, lastSent: 0, timespent: 0, enabled: config.tracked || config.timed};
 
         var send = function() {
-            if (!state.enabled || !state.duration) {
+            if (!state.enabled) {
                 return;
             }
             state.lastSent = Date.now();
-            var percent = Math.min(100, Math.floor(state.furthest / state.duration * 100));
+            var percent = state.duration ? Math.min(100, Math.floor(state.furthest / state.duration * 100)) : 0;
             Ajax.call([{
                 methodname: 'mod_bulkcoursestudio_report_progress',
                 args: {
@@ -96,6 +96,7 @@ define([
                     duration: Math.floor(state.duration),
                     percent: percent,
                     provider: config.provider || '',
+                    timespent: Math.floor(state.timespent),
                 },
             }])[0].catch(function() {
                 // A dropped progress ping must never interrupt playback.
@@ -126,7 +127,17 @@ define([
             send();
         };
 
-        return {state: state, update: update, send: send, finish: finish};
+        // Counts seconds the player is open while this browser tab is visible.
+        var tick = function() {
+            if (document.visibilityState === 'visible') {
+                state.timespent++;
+            }
+            if (Date.now() - state.lastSent >= REPORT_EVERY_MS) {
+                send();
+            }
+        };
+
+        return {state: state, update: update, send: send, finish: finish, tick: tick};
     };
 
     /**
@@ -326,6 +337,7 @@ define([
 
         var tracker = createTracker(config);
         var cleanup = null;
+        var clock = null;
 
         ModalFactory.create({
             type: ModalFactory.types.DEFAULT,
@@ -348,7 +360,14 @@ define([
 
             modal.show();
 
+            if (tracker.state.enabled) {
+                clock = setInterval(tracker.tick, 1000);
+            }
+
             root.on(ModalEvents.hidden, function() {
+                if (clock) {
+                    clearInterval(clock);
+                }
                 if (cleanup) {
                     cleanup();
                 }

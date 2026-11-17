@@ -76,11 +76,67 @@ if ($data = $form->get_data()) {
     redirect(new moodle_url('/admin/tool/bulkcoursestudio/step_sections.php', ['buildid' => $buildid]));
 }
 
+$thisurl = new moodle_url('/admin/tool/bulkcoursestudio/step_sections.php', ['buildid' => $buildid]);
+
+// Add N sections at once, named "Section 1", "Section 2"...
+$addcount = optional_param('addcount', 0, PARAM_INT);
+if ($addcount > 0 && confirm_sesskey()) {
+    $existingcount = count(draft_repository::get_sections($buildid));
+    $addcount = min($addcount, 52 - $existingcount);
+    for ($i = 1; $i <= $addcount; $i++) {
+        draft_repository::add_or_update_section(
+            $buildid,
+            null,
+            get_string('defaultsectionname', 'tool_bulkcoursestudio', $existingcount + $i),
+            ''
+        );
+    }
+    if ($addcount > 0) {
+        build_manager::sync($buildid);
+    }
+    redirect(
+        $thisurl,
+        get_string('sectionsadded', 'tool_bulkcoursestudio', max(0, $addcount)),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
+}
+
+// Rename one section.
+$renameid = optional_param('rename', 0, PARAM_INT);
+$newname = optional_param('newname', null, PARAM_TEXT);
+if ($renameid) {
+    $DB->get_record('tool_bulkcoursestudio_section', ['id' => $renameid, 'buildid' => $buildid], 'id', MUST_EXIST);
+    if ($newname !== null && confirm_sesskey()) {
+        $newname = trim($newname);
+        if ($newname !== '') {
+            draft_repository::rename_section($renameid, $newname);
+            build_manager::sync($buildid);
+        }
+        redirect($thisurl, get_string('renamed', 'tool_bulkcoursestudio'), null, \core\output\notification::NOTIFY_SUCCESS);
+    }
+}
+
 $sections = draft_repository::get_sections($buildid);
 
 echo $OUTPUT->header();
 echo ui::begin('sections', (int) $buildid, get_string('step:sections', 'tool_bulkcoursestudio'),
     get_string('stepsub:sections', 'tool_bulkcoursestudio'));
+
+// How many sections? One box, one button.
+echo html_writer::start_div('bcs-section');
+echo html_writer::div(html_writer::tag('h3', get_string('howmanysections', 'tool_bulkcoursestudio'), ['class' => 'bcs-section-title']), 'bcs-section-head');
+echo html_writer::start_tag('form', ['method' => 'post', 'action' => $thisurl->out(false), 'class' => 'bcs-activity']);
+echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+echo html_writer::span(get_string('howmanysections:help', 'tool_bulkcoursestudio'), 'bcs-activity-name');
+echo html_writer::empty_tag('input', [
+    'type' => 'number', 'name' => 'addcount', 'min' => 1, 'max' => 52,
+    'value' => empty($sections) ? 4 : 1, 'class' => 'form-control', 'style' => 'width:90px;',
+    'aria-label' => get_string('howmanysections', 'tool_bulkcoursestudio'),
+]);
+echo html_writer::tag('button', get_string('addsectionsbutton', 'tool_bulkcoursestudio'), ['type' => 'submit', 'class' => 'btn btn-primary']);
+echo html_writer::end_tag('form');
+echo html_writer::end_div();
 
 echo html_writer::start_div('bcs-section');
 echo html_writer::div(html_writer::tag('h3', get_string('sectionslist', 'tool_bulkcoursestudio'), ['class' => 'bcs-section-title']), 'bcs-section-head');
@@ -89,9 +145,27 @@ foreach ($sections as $section) {
         '/admin/tool/bulkcoursestudio/step_sections.php',
         ['buildid' => $buildid, 'sectionid' => $section->id]
     );
+    if ($renameid == $section->id) {
+        echo html_writer::start_tag('form', ['method' => 'post', 'action' => $thisurl->out(false), 'class' => 'bcs-activity']);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'rename', 'value' => $section->id]);
+        echo html_writer::empty_tag('input', [
+            'type' => 'text', 'name' => 'newname', 'value' => $section->name, 'class' => 'form-control bcs-activity-name',
+            'required' => 'required', 'autofocus' => 'autofocus',
+        ]);
+        echo html_writer::tag('button', get_string('save'), ['type' => 'submit', 'class' => 'btn btn-primary btn-sm']);
+        echo html_writer::link($thisurl, get_string('cancel'), ['class' => 'btn btn-secondary btn-sm']);
+        echo html_writer::end_tag('form');
+        continue;
+    }
     echo html_writer::div(
         html_writer::span(format_string($section->name), 'bcs-activity-name')
-        . html_writer::link($editurl, get_string('edit'), ['class' => 'btn btn-secondary btn-sm']),
+        . html_writer::link($editurl, get_string('edit'), ['class' => 'btn btn-secondary btn-sm'])
+        . html_writer::link(
+            new moodle_url($thisurl, ['rename' => $section->id]),
+            get_string('rename', 'tool_bulkcoursestudio'),
+            ['class' => 'btn btn-secondary btn-sm']
+        ),
         'bcs-activity'
     );
 }

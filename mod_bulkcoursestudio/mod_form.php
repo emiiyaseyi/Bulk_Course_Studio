@@ -151,6 +151,9 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
         $percent = (int) ($defaultvalues['completionpercent'] ?? 0);
         $defaultvalues['completionpercentenabled' . $suffix] = $percent > 0 ? 1 : 0;
         $defaultvalues['completionpercent' . $suffix] = $percent > 0 ? $percent : 80;
+        $minutes = (int) ($defaultvalues['completiontimespent'] ?? 0);
+        $defaultvalues['completiontimespentenabled' . $suffix] = $minutes > 0 ? 1 : 0;
+        $defaultvalues['completiontimespent' . $suffix] = $minutes > 0 ? $minutes : 5;
     }
 
     /**
@@ -168,6 +171,10 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
             $enabled = !empty($data->{'completionpercentenabled' . $suffix});
             if (!$enabled || !$automatic) {
                 $data->{'completionpercent' . $suffix} = 0;
+            }
+            $timeenabled = !empty($data->{'completiontimespentenabled' . $suffix});
+            if (!$timeenabled || !$automatic) {
+                $data->{'completiontimespent' . $suffix} = 0;
             }
         }
     }
@@ -207,7 +214,11 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
             $provider = \mod_bulkcoursestudio\embed_resolver::detect_provider($data['embedurl']);
             if ($provider === '' ||
                     \mod_bulkcoursestudio\embed_resolver::to_embed_src($data['embedurl'], $provider) === '') {
-                $errors['embedurl'] = get_string('embedunresolvable', 'mod_bulkcoursestudio');
+                // A normal OneDrive/SharePoint share link is blocked from
+                // being shown inside other sites, so say what to paste instead.
+                $errors['embedurl'] = $provider === \mod_bulkcoursestudio\embed_resolver::PROVIDER_ONEDRIVE
+                    ? get_string('onedriveneedsembed', 'mod_bulkcoursestudio')
+                    : get_string('embedunresolvable', 'mod_bulkcoursestudio');
             }
         }
 
@@ -220,6 +231,13 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
                 $errors[$group] = get_string('completionpercent_error', 'mod_bulkcoursestudio');
             } else if (!isset($errors['embedurl']) && !\mod_bulkcoursestudio\embed_resolver::supports_progress($provider)) {
                 $errors[$group] = get_string('completionpercent_unsupported', 'mod_bulkcoursestudio');
+            }
+        }
+
+        if (!empty($data['completiontimespentenabled' . $suffix])) {
+            $minutes = (int) ($data['completiontimespent' . $suffix] ?? 0);
+            if ($minutes < 1 || $minutes > 1440) {
+                $errors['completiontimespentgroup' . $suffix] = get_string('completiontimespent_error', 'mod_bulkcoursestudio');
             }
         }
 
@@ -257,7 +275,29 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
         $mform->hideIf('completionpercent' . $suffix, 'completionpercentenabled' . $suffix, 'notchecked');
         $mform->addHelpButton('completionpercentgroup' . $suffix, 'completionpercentgroup', 'mod_bulkcoursestudio');
 
-        return ['completionpercentgroup' . $suffix];
+        $timegroup = [
+            $mform->createElement(
+                'checkbox',
+                'completiontimespentenabled' . $suffix,
+                '',
+                get_string('completiontimespent', 'mod_bulkcoursestudio')
+            ),
+            $mform->createElement('text', 'completiontimespent' . $suffix, '', ['size' => 4]),
+            $mform->createElement('static', 'completiontimespentunit' . $suffix, '', get_string('minutes')),
+        ];
+        $mform->addGroup(
+            $timegroup,
+            'completiontimespentgroup' . $suffix,
+            get_string('completiontimespentgroup', 'mod_bulkcoursestudio'),
+            [' '],
+            false
+        );
+        $mform->setType('completiontimespent' . $suffix, PARAM_INT);
+        $mform->setDefault('completiontimespent' . $suffix, 5);
+        $mform->hideIf('completiontimespent' . $suffix, 'completiontimespentenabled' . $suffix, 'notchecked');
+        $mform->addHelpButton('completiontimespentgroup' . $suffix, 'completiontimespentgroup', 'mod_bulkcoursestudio');
+
+        return ['completionpercentgroup' . $suffix, 'completiontimespentgroup' . $suffix];
     }
 
     /**
@@ -268,6 +308,7 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
      */
     public function completion_rule_enabled($data) {
         $suffix = $this->get_suffix();
-        return !empty($data['completionpercentenabled' . $suffix]) && (int) ($data['completionpercent' . $suffix] ?? 0) > 0;
+        return (!empty($data['completionpercentenabled' . $suffix]) && (int) ($data['completionpercent' . $suffix] ?? 0) > 0)
+            || (!empty($data['completiontimespentenabled' . $suffix]) && (int) ($data['completiontimespent' . $suffix] ?? 0) > 0);
     }
 }

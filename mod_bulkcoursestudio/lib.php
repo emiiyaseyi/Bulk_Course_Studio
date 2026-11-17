@@ -92,6 +92,7 @@ function bulkcoursestudio_prepare_media_fields(stdClass $data): void {
         $data->provider = \mod_bulkcoursestudio\embed_resolver::detect_provider($data->embedurl);
     }
     $data->completionpercent = (int) ($data->completionpercent ?? 0);
+    $data->completiontimespent = (int) ($data->completiontimespent ?? 0);
     $data->autonext = empty($data->autonext) ? 0 : 1;
 }
 
@@ -244,7 +245,7 @@ function bulkcoursestudio_get_coursemodule_info($coursemodule) {
     $instance = $DB->get_record(
         'bulkcoursestudio',
         ['id' => $coursemodule->instance],
-        'id, name, intro, introformat, completionpercent'
+        'id, name, intro, introformat, completionpercent, completiontimespent'
     );
     if (!$instance) {
         return false;
@@ -257,6 +258,7 @@ function bulkcoursestudio_get_coursemodule_info($coursemodule) {
     }
     if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
         $info->customdata['customcompletionrules']['completionpercent'] = (int) $instance->completionpercent;
+        $info->customdata['customcompletionrules']['completiontimespent'] = (int) $instance->completiontimespent;
     }
     return $info;
 }

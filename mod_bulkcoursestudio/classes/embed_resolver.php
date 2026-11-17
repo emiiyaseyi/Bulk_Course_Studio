@@ -192,7 +192,7 @@ class embed_resolver {
         if (preg_match('#onedrive\.live\.com/embed#i', $url)) {
             return $url;
         }
-        if (preg_match('#\.sharepoint\.com/.*(action=embedview|/:v:/|_layouts/15/embed\.aspx)#i', $url)) {
+        if (preg_match('#\.sharepoint\.com/.*(action=embedview|_layouts/15/embed\.aspx)#i', $url)) {
             return $url;
         }
         return '';

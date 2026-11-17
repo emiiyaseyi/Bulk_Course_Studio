@@ -117,6 +117,7 @@ $PAGE->requires->js_call_amd('mod_bulkcoursestudio/launcher', 'init', [[
     'src' => $embedsrc,
     'type' => $mediatype,
     'provider' => $provider,
+    'timed' => (int) $instance->completiontimespent > 0,
     'tracked' => \mod_bulkcoursestudio\embed_resolver::supports_progress($provider),
     'resume' => $progress ? (int) $progress->currenttime : 0,
     'autonext' => !empty($instance->autonext),
@@ -160,11 +161,17 @@ if ($embedsrc === '') {
     }
     echo html_writer::end_div();
 
-    if ((int) $instance->completionpercent > 0 && $completioninfo->is_enabled($cm)) {
-        echo html_writer::div(
-            get_string('completiondetail:percent', 'mod_bulkcoursestudio', (int) $instance->completionpercent),
-            'text-muted small mb-3'
-        );
+    if ($completioninfo->is_enabled($cm)) {
+        $requirements = [];
+        if ((int) $instance->completionpercent > 0) {
+            $requirements[] = get_string('completiondetail:percent', 'mod_bulkcoursestudio', (int) $instance->completionpercent);
+        }
+        if ((int) $instance->completiontimespent > 0) {
+            $requirements[] = get_string('completiondetail:timespent', 'mod_bulkcoursestudio', (int) $instance->completiontimespent);
+        }
+        if ($requirements) {
+            echo html_writer::div(implode(' · ', $requirements), 'text-muted small mb-3');
+        }
     }
 }
 

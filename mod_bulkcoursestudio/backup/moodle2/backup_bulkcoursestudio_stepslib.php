@@ -41,12 +41,12 @@ class backup_bulkcoursestudio_activity_structure_step extends backup_activity_st
 
         $bulkcoursestudio = new backup_nested_element('bulkcoursestudio', ['id'], [
             'name', 'intro', 'introformat', 'embedurl', 'provider', 'mediasource',
-            'completionview', 'completionminseconds', 'completionpercent', 'autonext', 'timecreated', 'timemodified',
+            'completionview', 'completionminseconds', 'completionpercent', 'autonext', 'completiontimespent', 'timecreated', 'timemodified',
         ]);
 
         $progresses = new backup_nested_element('progresses');
         $progress = new backup_nested_element('progress', ['id'], [
-            'userid', 'secondswatched', 'currenttime', 'duration', 'watchpercent', 'provider', 'timemodified',
+            'userid', 'secondswatched', 'timespent', 'currenttime', 'duration', 'watchpercent', 'provider', 'timemodified',
         ]);
 
         $bulkcoursestudio->add_child($progresses);

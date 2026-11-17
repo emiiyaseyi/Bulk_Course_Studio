@@ -92,6 +92,12 @@ if (empty($build->courseid)) {
 }
 
 $course = get_course($build->courseid);
+
+// Moodle's activity settings forms (completion, restrict access, tags,
+// competencies) read the global $COURSE, which on an admin page is the site
+// course. core's own modedit.php gets the right one from require_login();
+// without this, those whole sections would silently be missing.
+$COURSE = $course;
 $sectionnum = draft_repository::get_section_number($buildid, $sectionid);
 
 global $DB;
@@ -145,6 +151,26 @@ $PAGE->set_title(get_string('step:activities', 'tool_bulkcoursestudio') . ': ' .
 
 $mform = new $mformclassname($data, $cw->section, $cm, $course);
 $mform->set_data($data);
+
+// moodleform_mod posts to a bare "modedit.php", which here resolves to a page
+// that does not exist (the server error after clicking Save). Point the form
+// back at this page, and tidy the buttons: one "Save activity" and Cancel.
+$formproperty = new ReflectionProperty('moodleform', '_form');
+$formproperty->setAccessible(true);
+$quickform = $formproperty->getValue($mform);
+$quickform->updateAttributes(['action' => $PAGE->url->out(false)]);
+if ($quickform->elementExists('buttonar')) {
+    $buttongroup = $quickform->getElement('buttonar');
+    $buttons = $buttongroup->getElements();
+    foreach ($buttons as $key => $button) {
+        if ($button->getName() === 'submitbutton') {
+            $button->setValue(get_string('saveactivity', 'tool_bulkcoursestudio'));
+        } else if ($button->getName() === 'submitbutton2') {
+            unset($buttons[$key]);
+        }
+    }
+    $buttongroup->setElements(array_values($buttons));
+}
 
 if ($mform->is_cancelled()) {
     redirect(new moodle_url('/admin/tool/bulkcoursestudio/step_activities.php', ['buildid' => $buildid]));

@@ -73,5 +73,22 @@ function xmldb_bulkcoursestudio_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026111703, 'bulkcoursestudio');
     }
 
+    if ($oldversion < 2026111704) {
+        // Time-spent completion rule.
+        $table = new xmldb_table('bulkcoursestudio');
+        $field = new xmldb_field('completiontimespent', XMLDB_TYPE_INTEGER, '5', null, XMLDB_NOTNULL, null, '0', 'autonext');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $table = new xmldb_table('bulkcoursestudio_progress');
+        $field = new xmldb_field('timespent', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'secondswatched');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026111704, 'bulkcoursestudio');
+    }
+
     return true;
 }

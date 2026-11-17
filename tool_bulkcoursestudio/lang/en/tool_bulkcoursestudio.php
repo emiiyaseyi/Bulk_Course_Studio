@@ -237,3 +237,12 @@ $string['ov:nav:upload_desc'] = 'Create a course from your file';
 $string['ov:nav:edit'] = 'Edit a course';
 $string['ov:nav:edit_desc'] = 'Reopen a course built here';
 $string['ov:dev:role'] = 'Plugin developer · Nigeria';
+
+// Added in v1.4: add several sections at once, rename.
+$string['howmanysections'] = 'How many sections do you need?';
+$string['howmanysections:help'] = 'Enter a number and they are created for you as Section 1, Section 2... You can rename each one.';
+$string['addsectionsbutton'] = 'Create sections';
+$string['defaultsectionname'] = 'Section {$a}';
+$string['sectionsadded'] = '{$a} sections were added.';
+$string['rename'] = 'Rename';
+$string['renamed'] = 'Renamed.';

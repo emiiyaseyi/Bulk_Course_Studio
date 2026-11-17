@@ -210,7 +210,8 @@ class template_parser {
                 ((string) ($row['G'] ?? '0')) === '1',
                 strtolower(trim((string) ($row['M'] ?? ''))),
                 (int) ($row['N'] ?? 0),
-                $modname
+                $modname,
+                (int) ($row['O'] ?? 0)
             );
 
             draft_repository::add_or_update_activity(
@@ -303,9 +304,16 @@ class template_parser {
      * @param string $mode none|manual|view|percent|''
      * @param int $percent
      * @param string $modname
+     * @param int $minutes
      * @return array
      */
-    private static function build_completion(bool $legacyview, string $mode, int $percent, string $modname): array {
+    private static function build_completion(
+        bool $legacyview,
+        string $mode,
+        int $percent,
+        string $modname,
+        int $minutes = 0
+    ): array {
         if ($mode === '') {
             $mode = $legacyview ? 'view' : '';
         }
@@ -316,6 +324,13 @@ class template_parser {
                 return ['completion' => 1, 'completionview' => 0];
             case 'view':
                 return ['completion' => 2, 'completionview' => 1];
+            case 'time':
+                $data = ['completion' => 2, 'completionview' => 1];
+                if ($modname === 'bulkcoursestudio' && $minutes > 0) {
+                    $data['completiontimespentenabled'] = 1;
+                    $data['completiontimespent'] = min(1440, $minutes);
+                }
+                return $data;
             case 'percent':
                 $data = ['completion' => 2, 'completionview' => 1];
                 if ($modname === 'bulkcoursestudio' && $percent > 0) {

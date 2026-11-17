@@ -40,17 +40,26 @@ class custom_completion extends activity_custom_completion {
 
         $this->validate_rule($rule);
 
-        $required = (int) ($this->cm->customdata['customcompletionrules']['completionpercent'] ?? 0);
+        $required = (int) ($this->cm->customdata['customcompletionrules'][$rule] ?? 0);
         if ($required <= 0) {
             return COMPLETION_INCOMPLETE;
         }
 
-        $watched = $DB->get_field('bulkcoursestudio_progress', 'watchpercent', [
+        $progress = $DB->get_record('bulkcoursestudio_progress', [
             'bulkcoursestudioid' => $this->cm->instance,
             'userid' => $this->userid,
         ]);
+        if (!$progress) {
+            return COMPLETION_INCOMPLETE;
+        }
 
-        return ($watched !== false && (int) $watched >= $required) ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
+        if ($rule === 'completiontimespent') {
+            // The rule is in minutes; the progress is stored in seconds.
+            $met = (int) $progress->timespent >= $required * 60;
+        } else {
+            $met = (int) $progress->watchpercent >= $required;
+        }
+        return $met ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
     }
 
     /**
@@ -59,7 +68,7 @@ class custom_completion extends activity_custom_completion {
      * @return string[]
      */
     public static function get_defined_custom_rules(): array {
-        return ['completionpercent'];
+        return ['completionpercent', 'completiontimespent'];
     }
 
     /**
@@ -69,8 +78,10 @@ class custom_completion extends activity_custom_completion {
      */
     public function get_custom_rule_descriptions(): array {
         $required = (int) ($this->cm->customdata['customcompletionrules']['completionpercent'] ?? 0);
+        $minutes = (int) ($this->cm->customdata['customcompletionrules']['completiontimespent'] ?? 0);
         return [
             'completionpercent' => get_string('completiondetail:percent', 'mod_bulkcoursestudio', $required),
+            'completiontimespent' => get_string('completiondetail:timespent', 'mod_bulkcoursestudio', $minutes),
         ];
     }
 
@@ -80,6 +91,6 @@ class custom_completion extends activity_custom_completion {
      * @return string[]
      */
     public function get_sort_order(): array {
-        return ['completionview', 'completionpercent'];
+        return ['completionview', 'completionpercent', 'completiontimespent'];
     }
 }

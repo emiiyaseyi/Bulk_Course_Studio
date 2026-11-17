@@ -50,6 +50,7 @@ class report_progress extends external_api {
             'duration' => new external_value(PARAM_INT, 'Video length in seconds'),
             'percent' => new external_value(PARAM_INT, 'Furthest point reached, as a percentage'),
             'provider' => new external_value(PARAM_ALPHANUMEXT, 'html5, youtube or vimeo', VALUE_DEFAULT, ''),
+            'timespent' => new external_value(PARAM_INT, 'Seconds spent with the activity open', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -61,9 +62,17 @@ class report_progress extends external_api {
      * @param int $duration
      * @param int $percent
      * @param string $provider
+     * @param int $timespent
      * @return array
      */
-    public static function execute(int $cmid, int $currenttime, int $duration, int $percent, string $provider = ''): array {
+    public static function execute(
+        int $cmid,
+        int $currenttime,
+        int $duration,
+        int $percent,
+        string $provider = '',
+        int $timespent = 0
+    ): array {
         global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
@@ -72,6 +81,7 @@ class report_progress extends external_api {
             'duration' => $duration,
             'percent' => $percent,
             'provider' => $provider,
+            'timespent' => $timespent,
         ]);
 
         $cm = get_coursemodule_from_id('bulkcoursestudio', $params['cmid'], 0, false, MUST_EXIST);
@@ -98,6 +108,7 @@ class report_progress extends external_api {
             'bulkcoursestudioid' => $instance->id,
             'userid' => $USER->id,
             'secondswatched' => max($currenttime, (int) ($existing->secondswatched ?? 0)),
+            'timespent' => max(max(0, $params['timespent']), (int) ($existing->timespent ?? 0)),
             'currenttime' => $currenttime,
             'duration' => $duration,
             'watchpercent' => $furthest,
@@ -111,12 +122,14 @@ class report_progress extends external_api {
             $DB->insert_record('bulkcoursestudio_progress', $row);
         }
 
+        // Let Moodle re-check every completion rule (view, percent, time)
+        // itself; it marks complete only when all enabled rules are met.
         $completed = false;
-        $required = (int) $instance->completionpercent;
         $completioninfo = new completion_info(get_course($cm->course));
-        if ($required > 0 && $completioninfo->is_enabled($cm) && $furthest >= $required) {
-            $completioninfo->update_state($cm, COMPLETION_COMPLETE, $USER->id);
-            $completed = true;
+        if ($completioninfo->is_enabled($cm)) {
+            $completioninfo->update_state($cm, COMPLETION_UNKNOWN, $USER->id);
+            $state = $completioninfo->get_data($cm, false, $USER->id)->completionstate;
+            $completed = in_array((int) $state, [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS], true);
         }
 
         return ['percent' => $furthest, 'completiontriggered' => $completed];

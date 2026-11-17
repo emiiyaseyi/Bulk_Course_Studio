@@ -24,12 +24,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['modulename'] = 'Bulk Course Studio embed';
-$string['modulenameplural'] = 'Bulk Course Studio embeds';
+$string['modulename'] = 'Bulk Course Studio';
+$string['modulenameplural'] = 'Bulk Course Studio';
 $string['reset:progress'] = 'Delete all watch-progress data';
-$string['modulename_help'] = 'Embeds a Vimeo, YouTube, Google Drive, or OneDrive video. Students open it in a pop-up player from the activity page.';
-$string['pluginname'] = 'Bulk Course Studio embed';
-$string['pluginadministration'] = 'Bulk Course Studio embed administration';
+$string['modulename_help'] = 'Adds a video to your course: a YouTube, Vimeo, Loom, Google Drive or OneDrive link, a direct video link, or an uploaded file. Learners watch it in a pop-up player, and you can require a percentage watched or time spent for completion.';
+$string['pluginname'] = 'Bulk Course Studio';
+$string['pluginadministration'] = 'Bulk Course Studio administration';
 
 $string['activityname'] = 'Activity name';
 $string['embedsection'] = 'Video / media link';
@@ -37,12 +37,12 @@ $string['embedurl'] = 'Video URL';
 $string['embedurl_help'] = 'Paste a Vimeo, YouTube, Google Drive, or OneDrive share link. Students see a launch button on the activity page and the video opens in a pop-up window — it is never shown inline on the page.';
 $string['openembed'] = 'Open video';
 
-$string['embednotice:sharingrequired'] = 'Google Drive and OneDrive links must be set to "Anyone with the link can view" or students will not be able to open the video.';
+$string['embednotice:sharingrequired'] = 'Google Drive links must be shared as "Anyone with the link can view". OneDrive/SharePoint: use Share, then Embed, and paste the embed link (a normal share link is blocked by Microsoft).';
 $string['embedunresolvable'] = 'This video link could not be resolved into a playable embed. Edit this activity and check the Video URL field.';
 
 
-$string['bulkcoursestudio:addinstance'] = 'Add a new Bulk Course Studio embed';
-$string['bulkcoursestudio:view'] = 'View a Bulk Course Studio embed';
+$string['bulkcoursestudio:addinstance'] = 'Add a new Bulk Course Studio activity';
+$string['bulkcoursestudio:view'] = 'View a Bulk Course Studio activity';
 
 $string['privacy:metadata:progress'] = 'Your watch progress on a Bulk Course Studio embedded video, used for completion tracking.';
 $string['privacy:metadata:progress:userid'] = 'The ID of the user whose progress this is.';
@@ -90,3 +90,12 @@ $string['privacy:metadata:progress:currenttime'] = 'The last playback position, 
 $string['privacy:metadata:progress:duration'] = 'The length of the video in seconds.';
 $string['privacy:metadata:progress:percent'] = 'The furthest point of the video the user has watched, as a percentage.';
 $string['privacy:metadata:progress:provider'] = 'Which player the video was watched in (for example YouTube).';
+
+// Added in v1.4: time-spent completion, OneDrive guidance.
+$string['completiontimespent'] = 'Learner must spend at least';
+$string['completiontimespentgroup'] = 'Time on the activity';
+$string['completiontimespentgroup_help'] = 'The learner must keep the video open (with this browser tab visible) for at least this many minutes. It works for every video source, including Google Drive, OneDrive and Loom.';
+$string['completiontimespent_error'] = 'Enter a number of minutes from 1 to 1440.';
+$string['completiondetail:timespent'] = 'Spend at least {$a} minutes on the activity';
+$string['privacy:metadata:progress:timespent'] = 'How many seconds the user kept the video open.';
+$string['onedriveneedsembed'] = 'This OneDrive/SharePoint link cannot be shown inside Moodle, because Microsoft blocks normal share links from being embedded. In OneDrive or SharePoint choose Share, then Embed, and paste the link from the iframe (it contains embed.aspx or onedrive.live.com/embed). Or upload the video here instead.';
