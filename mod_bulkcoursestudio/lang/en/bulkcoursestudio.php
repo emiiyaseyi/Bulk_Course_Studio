@@ -99,3 +99,13 @@ $string['completiontimespent_error'] = 'Enter a number of minutes from 1 to 1440
 $string['completiondetail:timespent'] = 'Spend at least {$a} minutes on the activity';
 $string['privacy:metadata:progress:timespent'] = 'How many seconds the user kept the video open.';
 $string['onedriveneedsembed'] = 'This OneDrive/SharePoint link cannot be shown inside Moodle, because Microsoft blocks normal share links from being embedded. In OneDrive or SharePoint choose Share, then Embed, and paste the link from the iframe (it contains embed.aspx or onedrive.live.com/embed). Or upload the video here instead.';
+
+// Added in v1.6: Google Drive percentage tracking, copy a video in from a link.
+$string['googleapikey'] = 'Google API key (optional)';
+$string['googleapikey_desc'] = 'Lets Google Drive videos play in the browser\'s own player, so "watch percentage" completion works for Drive links. Create a free key in Google Cloud Console (enable the Google Drive API, then Credentials > API key) and restrict it to your Moodle site address. Leave empty to keep the normal Drive preview, which cannot report how much was watched. The file must be shared as "Anyone with the link can view".';
+$string['mediasource:import'] = 'Copy a video into Moodle from a link (Drive, OneDrive/SharePoint "Anyone" link, direct link)';
+$string['mediasource:importinfo'] = 'Paste a public link. Moodle downloads the video (up to 100 MB) and keeps its own copy, so it plays for everyone and watch percentage works. The link must work without signing in: use "Anyone with the link can view".';
+$string['importfailed:notalink'] = 'Enter a link starting with https://.';
+$string['importfailed:unreachable'] = 'Moodle could not download from this link. Check that it opens without signing in and that the server is allowed to reach it.';
+$string['importfailed:notpublic'] = 'This link returned a web page instead of a video, usually because it asks you to sign in. Share the file as "Anyone with the link can view", or upload the video instead.';
+$string['importfailed:toolarge'] = 'This video is larger than the {$a} limit. Use a link instead, or a shorter video.';

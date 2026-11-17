@@ -82,6 +82,13 @@ function bulkcoursestudio_prepare_media_fields(stdClass $data): void {
         $data->mediasource = 'upload';
         $data->embedurl = '';
         $data->provider = 'upload';
+    } else if ($source === 'import') {
+        // Copy a video in from a public link: after the copy it is a normal
+        // uploaded video (see bulkcoursestudio_save_files()).
+        $data->importurl = \mod_bulkcoursestudio\embed_resolver::extract_url($data->embedurl ?? '');
+        $data->mediasource = 'upload';
+        $data->embedurl = '';
+        $data->provider = 'upload';
     } else if ($source === 'direct') {
         $data->mediasource = 'direct';
         $data->embedurl = \mod_bulkcoursestudio\embed_resolver::extract_url($data->embedurl ?? '');
@@ -108,7 +115,12 @@ function bulkcoursestudio_save_files(stdClass $data): void {
     }
     $context = context_module::instance($data->coursemodule);
 
-    if (isset($data->mediafile)) {
+    $importing = !empty($data->importurl);
+    if ($importing) {
+        \mod_bulkcoursestudio\video_importer::fetch($data->importurl, $context);
+    }
+
+    if (isset($data->mediafile) && !$importing) {
         if ($data->mediasource === 'upload') {
             file_save_draft_area_files(
                 $data->mediafile,

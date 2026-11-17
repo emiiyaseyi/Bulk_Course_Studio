@@ -51,7 +51,51 @@ class embed_resolver {
      * @return bool
      */
     public static function supports_progress(string $provider): bool {
+        if ($provider === self::PROVIDER_GDRIVE) {
+            // Drive videos can be played (and so tracked) in the browser's own
+            // player when the admin has set a Google API key.
+            return self::google_api_key() !== '';
+        }
         return in_array($provider, [self::PROVIDER_YOUTUBE, self::PROVIDER_VIMEO, 'upload', 'direct'], true);
+    }
+
+    /**
+     * The Google API key the admin saved in the plugin settings, or ''.
+     *
+     * @return string
+     */
+    public static function google_api_key(): string {
+        return trim((string) get_config('mod_bulkcoursestudio', 'googleapikey'));
+    }
+
+    /**
+     * The file id inside a Google Drive share link, or ''.
+     *
+     * @param string $url
+     * @return string
+     */
+    public static function drive_file_id(string $url): string {
+        if (preg_match('#drive\.google\.com/file/d/([A-Za-z0-9_-]+)#i', $url, $m)
+                || preg_match('#drive\.google\.com/open\?id=([A-Za-z0-9_-]+)#i', $url, $m)) {
+            return $m[1];
+        }
+        return '';
+    }
+
+    /**
+     * Address that streams a public Drive file for the browser's own video
+     * player (Google Drive API, needs the admin's API key), or ''.
+     *
+     * @param string $url the pasted Drive link
+     * @return string
+     */
+    public static function drive_stream_src(string $url): string {
+        $id = self::drive_file_id($url);
+        $key = self::google_api_key();
+        if ($id === '' || $key === '') {
+            return '';
+        }
+        return 'https://www.googleapis.com/drive/v3/files/' . rawurlencode($id) . '?alt=media&key=' . rawurlencode($key);
     }
 
     /**

@@ -350,6 +350,17 @@ define([
                 showNext(config, modalBody);
             };
 
+            if (isVideo && config.fallbacksrc) {
+                // Streaming from Google Drive can be refused (quota, sharing).
+                // Fall back to the normal preview, keeping the time-based rule.
+                root.find('video').on('error', function() {
+                    tracker.state.enabled = !!config.timed;
+                    modalBody.html('<div class="bulkcoursestudio-embed-wrap" style="position:relative;padding-top:56.25%;">' +
+                        '<iframe src="' + escapeHtmlAttribute(config.fallbacksrc) + '" allow="autoplay; fullscreen" allowfullscreen ' +
+                        'style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"></iframe></div>');
+                });
+            }
+
             if (config.tracked) {
                 if (isVideo) {
                     trackHtml5(root.find('video')[0], config, tracker, onEnded);

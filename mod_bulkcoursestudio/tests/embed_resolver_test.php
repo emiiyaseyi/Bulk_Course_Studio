@@ -161,12 +161,36 @@ final class embed_resolver_test extends \basic_testcase {
     }
 
     public function test_progress_tracking_is_supported_only_where_the_player_reports_it(): void {
+        $this->resetAfterTest();
         foreach ([embed_resolver::PROVIDER_YOUTUBE, embed_resolver::PROVIDER_VIMEO, 'upload', 'direct'] as $provider) {
             $this->assertTrue(embed_resolver::supports_progress($provider));
         }
-        foreach ([embed_resolver::PROVIDER_GDRIVE, embed_resolver::PROVIDER_ONEDRIVE, embed_resolver::PROVIDER_LOOM, ''] as $provider) {
+        foreach ([embed_resolver::PROVIDER_ONEDRIVE, embed_resolver::PROVIDER_LOOM, ''] as $provider) {
             $this->assertFalse(embed_resolver::supports_progress($provider));
         }
+        // Google Drive is only trackable once an API key is configured.
+        set_config('googleapikey', '', 'mod_bulkcoursestudio');
+        $this->assertFalse(embed_resolver::supports_progress(embed_resolver::PROVIDER_GDRIVE));
+        set_config('googleapikey', 'KEY123', 'mod_bulkcoursestudio');
+        $this->assertTrue(embed_resolver::supports_progress(embed_resolver::PROVIDER_GDRIVE));
+    }
+
+    public function test_drive_links_give_a_file_id_and_stream_and_download_addresses(): void {
+        $this->resetAfterTest();
+        $link = 'https://drive.google.com/file/d/1AbC-dEf_9/view?usp=sharing';
+        $this->assertSame('1AbC-dEf_9', embed_resolver::drive_file_id($link));
+        $this->assertSame('', embed_resolver::drive_file_id('https://example.com/x'));
+        set_config('googleapikey', 'KEY123', 'mod_bulkcoursestudio');
+        $this->assertSame(
+            'https://www.googleapis.com/drive/v3/files/1AbC-dEf_9?alt=media&key=KEY123',
+            embed_resolver::drive_stream_src($link)
+        );
+        $this->assertStringContainsString('id=1AbC-dEf_9', video_importer::download_url($link));
+        $this->assertStringContainsString(
+            'download=1',
+            video_importer::download_url('https://contoso-my.sharepoint.com/:v:/g/personal/a/abc?e=1')
+        );
+        $this->assertSame('https://example.com/a.mp4', video_importer::download_url('https://example.com/a.mp4'));
     }
 
     public function test_sharing_notice_shown_only_for_drive_and_onedrive(): void {

@@ -82,7 +82,20 @@ if ($source === 'upload') {
 } else {
     $embedsrc = \mod_bulkcoursestudio\embed_resolver::to_embed_src($instance->embedurl, $provider);
     $sharingnotice = \mod_bulkcoursestudio\embed_resolver::get_sharing_notice($provider);
+
+    // Google Drive with an API key: play the file in the browser's own
+    // player so watch percentage can be tracked. If Google refuses to stream
+    // it (quota, sharing), the player falls back to the normal Drive preview.
+    if ($provider === \mod_bulkcoursestudio\embed_resolver::PROVIDER_GDRIVE) {
+        $streamsrc = \mod_bulkcoursestudio\embed_resolver::drive_stream_src($instance->embedurl);
+        if ($streamsrc !== '') {
+            $fallbacksrc = $embedsrc;
+            $embedsrc = $streamsrc;
+            $mediatype = 'video';
+        }
+    }
 }
+$fallbacksrc = $fallbacksrc ?? '';
 
 // The learner's saved progress, for "resume where you left off".
 $progress = $DB->get_record('bulkcoursestudio_progress', [
@@ -118,7 +131,8 @@ $PAGE->requires->js_call_amd('mod_bulkcoursestudio/launcher', 'init', [[
     'type' => $mediatype,
     'provider' => $provider,
     'timed' => (int) $instance->completiontimespent > 0,
-    'tracked' => \mod_bulkcoursestudio\embed_resolver::supports_progress($provider),
+    'tracked' => $mediatype === 'video' || in_array($provider, ['youtube', 'vimeo'], true),
+    'fallbacksrc' => $fallbacksrc,
     'resume' => $progress ? (int) $progress->currenttime : 0,
     'autonext' => !empty($instance->autonext),
     'nexturl' => $nexturl,

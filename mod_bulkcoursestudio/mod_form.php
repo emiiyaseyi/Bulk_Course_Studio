@@ -62,6 +62,7 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
         $mform->addElement('select', 'mediasource', get_string('mediasource', 'mod_bulkcoursestudio'), [
             'url' => get_string('mediasource:url', 'mod_bulkcoursestudio'),
             'direct' => get_string('mediasource:direct', 'mod_bulkcoursestudio'),
+            'import' => get_string('mediasource:import', 'mod_bulkcoursestudio'),
             'upload' => get_string('mediasource:upload', 'mod_bulkcoursestudio'),
         ]);
         $mform->setDefault('mediasource', 'url');
@@ -70,6 +71,8 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
         $mform->hideIf('urlnotice', 'mediasource', 'neq', 'url');
         $mform->addElement('static', 'directnotice', '', get_string('mediasource:directinfo', 'mod_bulkcoursestudio'));
         $mform->hideIf('directnotice', 'mediasource', 'neq', 'direct');
+        $mform->addElement('static', 'importnotice', '', get_string('mediasource:importinfo', 'mod_bulkcoursestudio'));
+        $mform->hideIf('importnotice', 'mediasource', 'neq', 'import');
 
         $mform->addElement('text', 'embedurl', get_string('embedurl', 'mod_bulkcoursestudio'), ['size' => '64']);
         $mform->setType('embedurl', PARAM_RAW_TRIMMED);
@@ -210,6 +213,13 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
             }
         } else if (empty($data['embedurl'])) {
             $errors['embedurl'] = get_string('required');
+        } else if ($source === 'import') {
+            // Becomes an uploaded video once copied, so it is tracked like one.
+            $provider = 'upload';
+            $problem = \mod_bulkcoursestudio\video_importer::probe($data['embedurl']);
+            if ($problem !== '') {
+                $errors['embedurl'] = get_string($problem, 'mod_bulkcoursestudio');
+            }
         } else if ($source === 'direct') {
             if (!\mod_bulkcoursestudio\embed_resolver::is_direct_video_url($data['embedurl'])) {
                 $errors['embedurl'] = get_string('directurlinvalid', 'mod_bulkcoursestudio');

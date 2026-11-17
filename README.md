@@ -2,7 +2,7 @@
 
 **Build complete Moodle courses in minutes, not hours.** Bulk Course Studio lets an administrator create a whole course (details, sections, activities, uploaded files and embedded videos) through a guided wizard or a single Excel upload, preview the result, and then save it, publish it, or schedule it for later.
 
-> **Status: alpha, release v1.5.** All releases are v1; the number after the dot goes up with each update (v1.1, v1.2, ...). The code is complete for the v1 scope, but it has **not yet been installed or tested on a live Moodle site**. Treat it as a test-site release until the [live-instance checklist](docs/live-instance-verification-checklist.md) has been worked through.
+> **Status: alpha, release v1.6.** All releases are v1; the number after the dot goes up with each update (v1.1, v1.2, ...). The code is complete for the v1 scope, but it has **not yet been installed or tested on a live Moodle site**. Treat it as a test-site release until the [live-instance checklist](docs/live-instance-verification-checklist.md) has been worked through.
 
 Requires **Moodle 4.5 or later**.
 
@@ -96,6 +96,8 @@ This was an internal review, not an independent penetration test.
 - **The AMD JavaScript build was made with `terser`, not Moodle's Grunt.** Re-run the real Grunt build on a development install.
 - **Placeholder icons** in both plugins.
 - **Deprecated-API checks** against Moodle 4.5 and 5.x are still outstanding.
+- **Google Drive percentage tracking:** set a free Google API key (Site administration > Plugins > Activity modules > Bulk Course Studio) and Drive videos play in the browser's own player, so watch percentage works. Without a key Drive keeps the normal preview (time-on-activity completion still works).
+- **Copy a video in from a link:** choose "Copy a video into Moodle from a link" to have Moodle download a public Drive, OneDrive/SharePoint ("Anyone" link) or direct video (up to 100 MB). It then behaves like an upload.
 - **OneDrive/SharePoint:** a normal share link cannot be shown inside Moodle (Microsoft blocks it). Use Share, then Embed, and paste the embed link, or upload the video.
 - **Document completion** (scroll to the end of a PDF) is not built yet.
 - **Percentage tracking** does not work for Google Drive, OneDrive or Loom links, because those players do not share playback progress. Use view completion for them.

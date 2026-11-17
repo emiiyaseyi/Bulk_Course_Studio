@@ -140,6 +140,30 @@ if ($cm) {
         'return' => 0,
         'sr' => $sectionnum,
     ];
+
+    // The two extra steps core's own modedit.php does for a new activity.
+    // Description editor: an empty draft area, so images can be added to it.
+    if (plugin_supports('mod', $modname, FEATURE_MOD_INTRO, true)) {
+        $introdraftid = file_get_submitted_draft_itemid('introeditor');
+        file_prepare_draft_area($introdraftid, null, null, null, null, ['subdirs' => true]);
+        $data->introeditor = ['text' => '', 'format' => FORMAT_HTML, 'itemid' => $introdraftid];
+    }
+    // Advanced grading (assignment rubrics and marking guides).
+    if (plugin_supports('mod', $modname, FEATURE_ADVANCED_GRADING, false)
+            && has_capability('moodle/grade:managegradingforms', $context)) {
+        require_once($CFG->dirroot . '/grade/grading/lib.php');
+        $gradingman = get_grading_manager($context, 'mod_' . $modname);
+        $data->_advancedgradingdata['methods'] = $gradingman->get_available_methods();
+        $areas = $gradingman->get_advanced_gradable_areas();
+        if (!empty($areas)) {
+            $data->_advancedgradingdata['areas'] = $areas;
+            $data->_advancedgradingdata['activemethods'] = [];
+            foreach ($areas as $areaname => $areatitle) {
+                $gradingman->set_area($areaname);
+                $data->_advancedgradingdata['activemethods'][$areaname] = $gradingman->get_active_method();
+            }
+        }
+    }
 }
 
 $PAGE->set_context($context);
