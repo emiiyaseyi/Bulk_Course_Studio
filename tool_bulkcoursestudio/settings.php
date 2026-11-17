@@ -39,4 +39,12 @@ if ($hassiteconfig) {
         new moodle_url('/admin/tool/bulkcoursestudio/overview.php'),
         'tool/bulkcoursestudio:manage'
     ));
+    // Also list the tool under Plugins > Admin tools, where Moodle admins
+    // expect to find installed admin tools.
+    $ADMIN->add('tools', new admin_externalpage(
+        'tool_bulkcoursestudio_plugins',
+        get_string('pluginname', 'tool_bulkcoursestudio'),
+        new moodle_url('/admin/tool/bulkcoursestudio/index.php'),
+        'tool/bulkcoursestudio:manage'
+    ));
 }
