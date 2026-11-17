@@ -72,7 +72,7 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
         $mform->hideIf('directnotice', 'mediasource', 'neq', 'direct');
 
         $mform->addElement('text', 'embedurl', get_string('embedurl', 'mod_bulkcoursestudio'), ['size' => '64']);
-        $mform->setType('embedurl', PARAM_URL);
+        $mform->setType('embedurl', PARAM_RAW_TRIMMED);
         $mform->addHelpButton('embedurl', 'embedurl', 'mod_bulkcoursestudio');
         $mform->hideIf('embedurl', 'mediasource', 'eq', 'upload');
 
@@ -188,6 +188,10 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
      */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
+        if (isset($data['embedurl'])) {
+            // Accept a whole pasted <iframe> embed code as well as a plain link.
+            $data['embedurl'] = mod_bulkcoursestudioembed_resolver::extract_url($data['embedurl']);
+        }
         $suffix = $this->get_suffix();
         $source = $data['mediasource'] ?? 'url';
         $provider = $source;

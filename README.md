@@ -2,7 +2,7 @@
 
 **Build complete Moodle courses in minutes, not hours.** Bulk Course Studio lets an administrator create a whole course (details, sections, activities, uploaded files and embedded videos) through a guided wizard or a single Excel upload, preview the result, and then save it, publish it, or schedule it for later.
 
-> **Status: alpha, release v1.4.** All releases are v1; the number after the dot goes up with each update (v1.1, v1.2, ...). The code is complete for the v1 scope, but it has **not yet been installed or tested on a live Moodle site**. Treat it as a test-site release until the [live-instance checklist](docs/live-instance-verification-checklist.md) has been worked through.
+> **Status: alpha, release v1.5.** All releases are v1; the number after the dot goes up with each update (v1.1, v1.2, ...). The code is complete for the v1 scope, but it has **not yet been installed or tested on a live Moodle site**. Treat it as a test-site release until the [live-instance checklist](docs/live-instance-verification-checklist.md) has been worked through.
 
 Requires **Moodle 4.5 or later**.
 

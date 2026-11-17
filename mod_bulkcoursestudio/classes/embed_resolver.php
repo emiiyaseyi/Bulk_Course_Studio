@@ -210,6 +210,22 @@ class embed_resolver {
     }
 
     /**
+     * Turn what the teacher pasted into a plain URL. A whole
+     * <iframe src="...">...</iframe> embed code (as YouTube, Vimeo and
+     * OneDrive give you) is reduced to its src address.
+     *
+     * @param string $input pasted link or embed code
+     * @return string the URL
+     */
+    public static function extract_url(string $input): string {
+        $input = trim($input);
+        if (stripos($input, '<iframe') !== false && preg_match('/\bsrc\s*=\s*(["\'])(.*?)\1/is', $input, $m)) {
+            $input = html_entity_decode($m[2], ENT_QUOTES | ENT_HTML5);
+        }
+        return trim($input);
+    }
+
+    /**
      * Whether a URL is a direct link to a video file (for example
      * https://example.com/lesson.mp4) that the browser can play itself.
      *

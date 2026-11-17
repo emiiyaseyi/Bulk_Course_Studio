@@ -130,6 +130,20 @@ final class embed_resolver_test extends \basic_testcase {
         $this->assertSame('', embed_resolver::to_embed_src($maliciouswithsinglequote, embed_resolver::PROVIDER_ONEDRIVE));
     }
 
+    public function test_a_pasted_iframe_embed_code_is_reduced_to_its_src(): void {
+        $code = '<iframe src="https://contoso-my.sharepoint.com/personal/a/_layouts/15/embed.aspx?UniqueId=1&amp;x=2" '
+            . 'width="853" height="480" frameborder="0" allowfullscreen></iframe>';
+        $this->assertSame(
+            'https://contoso-my.sharepoint.com/personal/a/_layouts/15/embed.aspx?UniqueId=1&x=2',
+            embed_resolver::extract_url($code)
+        );
+        $this->assertSame('https://youtu.be/abcdefghijk', embed_resolver::extract_url('  https://youtu.be/abcdefghijk '));
+        $this->assertSame(
+            embed_resolver::PROVIDER_ONEDRIVE,
+            embed_resolver::detect_provider(embed_resolver::extract_url($code))
+        );
+    }
+
     public function test_loom_links_resolve_to_the_embed_form(): void {
         $this->assertSame(embed_resolver::PROVIDER_LOOM, embed_resolver::detect_provider('https://www.loom.com/share/abc123DEF'));
         $this->assertSame(
