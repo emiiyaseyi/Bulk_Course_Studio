@@ -2,7 +2,7 @@
 
 **Build complete Moodle courses in minutes, not hours.** Bulk Course Studio lets an administrator create a whole course (details, sections, activities, uploaded files and embedded videos) through a guided wizard or a single Excel upload, preview the result, and then save it, publish it, or schedule it for later.
 
-> **Status: alpha (v0.2.0).** The code is complete for the v1 scope, but it has **not yet been installed or tested on a live Moodle site**. Treat it as a test-site release until the [live-instance checklist](docs/live-instance-verification-checklist.md) has been worked through.
+> **Status: alpha, release v1.2.** All releases are v1; the number after the dot goes up with each update (v1.1, v1.2, ...). The code is complete for the v1 scope, but it has **not yet been installed or tested on a live Moodle site**. Treat it as a test-site release until the [live-instance checklist](docs/live-instance-verification-checklist.md) has been worked through.
 
 Requires **Moodle 4.5 or later**.
 
@@ -28,6 +28,7 @@ The admin tool works on its own. The activity module is optional, and is only ne
 - **File matching.** A screen to attach uploaded files to any File or Folder activity that names a local filename.
 - **Preview before commit.** Both paths share one preview and one commit engine. The engine refuses to write if the preview has errors.
 - **Save, publish or schedule.** New courses are created hidden. You can publish them immediately or schedule publishing through a Moodle scheduled task.
+- **Excel extras.** Besides the basics, the template has columns for course tags and competencies, and for each activity: visible or hidden, tags, competencies, open and close dates (restrict access), and completion (none, manual, view, or minimum seconds watched).
 - **Edit existing builds.** Search committed builds and reopen them in the wizard. Re-saving updates the same activities instead of duplicating them.
 - **Discard.** Abandoning an unpublished build soft-deletes its hidden course to the recycle bin. A published course is never touched.
 - **Core APIs only.** The engine uses Moodle's own course, module, completion and file APIs. It never writes to core database tables directly, so a built course looks the same as one made by hand.
@@ -36,6 +37,7 @@ The admin tool works on its own. The activity module is optional, and is only ne
 ### Embed activity (`mod_bulkcoursestudio`)
 
 - Works with **YouTube, Vimeo, Google Drive and OneDrive/SharePoint** links, or an **uploaded video file** (MP4, WebM, M4V, MOV, 3GP).
+- Uploaded videos are limited to **100 MB**, with a warning shown on the form; use a link for longer recordings.
 - Teachers can attach **resource files** (slides, worksheets) that students download from the activity page.
 - Shows a launch button on the course page and plays the video in a **pop-up modal**.
 - Supports **view-based completion** and an optional **"minimum seconds watched"** rule.
@@ -84,7 +86,7 @@ This was an internal review, not an independent penetration test.
 ## Known gaps
 
 - **Not tested on a live Moodle site.** The unit tests for the build engine, Excel parser and embed resolver exist but have not been run. PHP and JavaScript syntax checks do pass.
-- **Hide/delete choice for sections and activities.** The wizard can remove an activity, but the hide-instead-of-delete option (`build_manager::remove_with_choice()`) still has no screen.
+- **Sections** can't be hidden or removed from the wizard yet; activities can (hide, show, or delete).
 - **No Behat (UI) tests** for the wizard.
 - **The AMD JavaScript build was made with `terser`, not Moodle's Grunt.** Re-run the real Grunt build on a development install.
 - **Placeholder icons** in both plugins.

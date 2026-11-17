@@ -327,6 +327,40 @@ class draft_repository {
     }
 
     /**
+     * Whether a draft activity is set to be hidden from learners.
+     *
+     * @param \stdClass $activity draft activity row
+     * @return bool
+     */
+    public static function is_activity_hidden(\stdClass $activity): bool {
+        $moduledata = json_decode($activity->moduledata ?? '{}', true) ?? [];
+        return isset($moduledata['visible']) && (int) $moduledata['visible'] === 0;
+    }
+
+    /**
+     * Hide or show a draft activity. The choice is saved in the draft (so
+     * later saves keep it) and applied at once to the real course module
+     * through core's own set_coursemodule_visible().
+     *
+     * @param int $activityid
+     * @param bool $visible
+     */
+    public static function set_activity_visibility(int $activityid, bool $visible): void {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $activity = $DB->get_record('tool_bulkcoursestudio_activity', ['id' => $activityid], '*', MUST_EXIST);
+        $moduledata = json_decode($activity->moduledata ?? '{}', true) ?? [];
+        $moduledata['visible'] = $visible ? 1 : 0;
+        $DB->set_field('tool_bulkcoursestudio_activity', 'moduledata', json_encode($moduledata), ['id' => $activityid]);
+        $DB->set_field('tool_bulkcoursestudio_activity', 'timemodified', time(), ['id' => $activityid]);
+
+        if (!empty($activity->committedcmid) && $DB->record_exists('course_modules', ['id' => $activity->committedcmid])) {
+            set_coursemodule_visible($activity->committedcmid, $visible ? 1 : 0);
+        }
+    }
+
+    /**
      * Remove one draft activity, and the real course module it created (if
      * any) through core's own course_delete_module().
      *

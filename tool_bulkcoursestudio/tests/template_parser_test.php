@@ -247,4 +247,32 @@ final class template_parser_test extends \advanced_testcase {
 
         $this->assertSame('handout.pdf', $moduledata['localfilename']);
     }
+
+    public function test_parse_reads_the_extra_course_and_activity_columns(): void {
+        $path = $this->build_workbook_file(
+            [['Course', 'cextra1', '', '', 'topics', '2027-01-06', '', '1', 'alpha, beta', '']],
+            [['1', 'Introduction', '']],
+            [['1', 'page', 'Timed page', '', '', '', '0', '0', 'x, y', '', '2027-02-01', '2027-03-01', 'manual', '']]
+        );
+
+        $buildid = template_parser::parse($path);
+
+        $coursedata = json_decode(draft_repository::get_build($buildid)->coursedata, true);
+        $this->assertSame(['alpha', 'beta'], $coursedata['tags']);
+
+        $sections = array_values(draft_repository::get_sections($buildid));
+        $activities = array_values(draft_repository::get_activities($sections[0]->id));
+        $moduledata = json_decode($activities[0]->moduledata, true);
+        $this->assertSame(0, $moduledata['visible']);
+        $this->assertSame(['x', 'y'], $moduledata['tags']);
+
+        $availability = json_decode($moduledata['availability'], true);
+        $this->assertSame('&', $availability['op']);
+        $this->assertCount(2, $availability['c']);
+        $this->assertSame('>=', $availability['c'][0]['d']);
+        $this->assertSame('<', $availability['c'][1]['d']);
+
+        $completiondata = json_decode($activities[0]->completiondata, true);
+        $this->assertSame(1, $completiondata['completion']);
+    }
 }

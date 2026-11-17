@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'tool_bulkcoursestudio';
-$plugin->version   = 2026111701; // YYYYMMDDXX.
+$plugin->version   = 2026111702; // YYYYMMDDXX.
 $plugin->requires  = 2024100700; // Moodle 4.5.0 build.
 $plugin->maturity  = MATURITY_ALPHA; // Raise to BETA/STABLE as the plugin matures.
-$plugin->release   = 'v0.2.0';
+$plugin->release   = 'v1.2';
 
 // Mod_bulkcoursestudio is a companion component, not a hard Moodle dependency,
 // so it is intentionally NOT declared in $plugin->dependencies: this tool must

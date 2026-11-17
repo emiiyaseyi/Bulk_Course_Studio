@@ -64,7 +64,8 @@ class template_generator {
     private static function build_course_sheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet): void {
         $sheet->setTitle('Course');
 
-        $headers = ['fullname', 'shortname', 'category_path', 'summary', 'format', 'startdate', 'enddate', 'enablecompletion'];
+        $headers = ['fullname', 'shortname', 'category_path', 'summary', 'format', 'startdate', 'enddate', 'enablecompletion',
+            'tags', 'competencies'];
         $sheet->fromArray($headers, null, 'A1');
 
         // One example row, commented out via a leading '#', so re-uploading
@@ -75,7 +76,7 @@ class template_generator {
         $examplecategoryname = !empty($examplecategory) ? reset($examplecategory)->get_formatted_name() : 'Miscellaneous';
         $examplerow = [
             '# Example Course', 'EX101', $examplecategoryname,
-            'Replace this row with your own course.', 'topics', '2027-01-06', '', '1',
+            'Replace this row with your own course.', 'topics', '2027-01-06', '', '1', 'onboarding, induction', '',
         ];
         $sheet->fromArray($examplerow, null, 'A2');
 
@@ -89,7 +90,12 @@ class template_generator {
             'Full path, e.g. "Science / Physics". Must already exist — categories are not created from this file.'
         );
 
-        foreach (range('A', 'H') as $col) {
+        $sheet->getCell('I1')->getComment()->getText()->createTextRun('Course tags, separated by commas.');
+        $sheet->getCell('J1')->getComment()->getText()->createTextRun(
+            'Competency short names or ID numbers, separated by commas. Needs the competencies feature on.'
+        );
+
+        foreach (range('A', 'J') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
     }
@@ -123,11 +129,13 @@ class template_generator {
     private static function build_activities_sheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet): void {
         $sheet->setTitle('Activities');
 
-        $headers = ['section_number', 'activity_type', 'name', 'description', 'embed_url', 'local_filename', 'completion_view'];
+        $headers = ['section_number', 'activity_type', 'name', 'description', 'embed_url', 'local_filename', 'completion_view',
+            'visible', 'tags', 'competencies', 'available_from', 'available_until', 'completion', 'completion_min_seconds'];
         $sheet->fromArray($headers, null, 'A1');
         $examplerow = [
             '1', 'bulkcoursestudio', 'Welcome video', 'Watch before starting.',
             'https://www.youtube.com/watch?v=example', '', '1',
+            '1', 'video', '', '', '', 'view', '',
         ];
         $sheet->fromArray($examplerow, null, 'A2');
 
@@ -142,7 +150,20 @@ class template_generator {
             . 'files uploaded on the screen after this template is re-uploaded — see the plugin README / spec §3.2.';
         $sheet->getCell('F1')->getComment()->getText()->createTextRun($filenamehelp);
 
-        foreach (range('A', 'G') as $col) {
+        $notes = [
+            'H1' => 'Visible to learners: 1 = yes (default), 0 = hidden.',
+            'I1' => 'Activity tags, separated by commas.',
+            'J1' => 'Competency short names or ID numbers, separated by commas. They are also linked to the course.',
+            'K1' => 'Restrict access: the activity opens on this date (YYYY-MM-DD). Leave blank for no restriction.',
+            'L1' => 'Restrict access: the activity closes on this date (YYYY-MM-DD). Leave blank for no restriction.',
+            'M1' => 'Completion: none, manual (learner ticks it), view (marked when opened), or minseconds (Bulk Course Studio embed only).',
+            'N1' => 'With completion = minseconds: seconds the learner must watch.',
+        ];
+        foreach ($notes as $cell => $note) {
+            $sheet->getCell($cell)->getComment()->getText()->createTextRun($note);
+        }
+
+        foreach (range('A', 'N') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
     }

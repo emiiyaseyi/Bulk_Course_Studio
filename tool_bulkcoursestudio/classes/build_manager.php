@@ -61,6 +61,11 @@ class build_manager {
             'tree' => (object) ['course' => $coursedata, 'sections' => []],
         ];
 
+        // Non-fatal notes recorded while importing an Excel file.
+        foreach ($coursedata['importwarnings'] ?? [] as $importwarning) {
+            $result->warnings[] = $importwarning;
+        }
+
         // Course-level checks.
         if (empty($coursedata['fullname'])) {
             $result->errors[] = get_string('preview:error:nofullname', 'tool_bulkcoursestudio');
@@ -246,7 +251,7 @@ class build_manager {
         // exists, not through create_course()/update_course().
         $linkcompetencies = property_exists($coursedata, 'competencyids');
         $competencyids = array_map('intval', (array) ($coursedata->competencyids ?? []));
-        unset($coursedata->competencyids);
+        unset($coursedata->competencyids, $coursedata->importwarnings);
 
         $transaction = $DB->start_delegated_transaction();
 

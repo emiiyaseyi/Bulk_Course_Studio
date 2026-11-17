@@ -58,11 +58,20 @@ class template_parser {
             }
         }
 
-        $coursedata = self::parse_course_sheet($workbook->getSheetByName('Course'));
+        $warnings = [];
+        $coursedata = self::parse_course_sheet($workbook->getSheetByName('Course'), $warnings);
         $buildid = draft_repository::save_course_details(null, $coursedata, 'excel');
 
         $sectionmap = self::parse_sections_sheet($workbook->getSheetByName('Sections'), $buildid);
-        self::parse_activities_sheet($workbook->getSheetByName('Activities'), $sectionmap);
+        $activitycompetencies = self::parse_activities_sheet($workbook->getSheetByName('Activities'), $sectionmap, $warnings);
+
+        // Competencies used by activities must also be linked to the course.
+        $coursedata['competencyids'] = array_values(array_unique(array_merge(
+            $coursedata['competencyids'] ?? [],
+            $activitycompetencies
+        )));
+        $coursedata['importwarnings'] = $warnings;
+        draft_repository::save_course_details($buildid, $coursedata, 'excel');
 
         return $buildid;
     }
@@ -73,7 +82,7 @@ class template_parser {
      * @return array course-details data, shaped like
      *               draft_repository::save_course_details() expects
      */
-    private static function parse_course_sheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet): array {
+    private static function parse_course_sheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, array &$warnings): array {
         $rows = $sheet->toArray(null, true, true, true);
         unset($rows[1]); // Header row.
 
@@ -93,6 +102,8 @@ class template_parser {
                 'enddate' => self::parse_excel_date($row['G'] ?? null),
                 'enablecompletion' => ((string) ($row['H'] ?? '1')) === '1' ? 1 : 0,
                 'visible' => 0,
+                'tags' => self::split_list((string) ($row['I'] ?? '')),
+                'competencyids' => self::resolve_competencies(self::split_list((string) ($row['J'] ?? '')), $warnings),
             ];
         }
 
@@ -131,8 +142,15 @@ class template_parser {
      * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
      * @param array $sectionmap section_number => draft section id, from
      *              parse_sections_sheet()
+     * @param array $warnings collects non-fatal import warnings
+     * @return int[] competency ids used by any activity
      */
-    private static function parse_activities_sheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, array $sectionmap): void {
+    private static function parse_activities_sheet(
+        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
+        array $sectionmap,
+        array &$warnings
+    ): array {
+        $usedcompetencies = [];
         $rows = $sheet->toArray(null, true, true, true);
         unset($rows[1]);
 
@@ -166,7 +184,34 @@ class template_parser {
                 $moduledata['localfilename'] = trim((string) $row['F']);
             }
 
-            $completiondata = ['completionview' => ((string) ($row['G'] ?? '0')) === '1' ? 1 : 0];
+            // Extra per-activity options (columns H-N), all optional.
+            if (trim((string) ($row['H'] ?? '')) !== '') {
+                $moduledata['visible'] = ((string) $row['H']) === '0' ? 0 : 1;
+            }
+            $tags = self::split_list((string) ($row['I'] ?? ''));
+            if ($tags) {
+                $moduledata['tags'] = $tags;
+            }
+            $competencyids = self::resolve_competencies(self::split_list((string) ($row['J'] ?? '')), $warnings);
+            if ($competencyids) {
+                $moduledata['competencies'] = $competencyids;
+                $usedcompetencies = array_merge($usedcompetencies, $competencyids);
+            }
+            $availability = self::build_availability(
+                self::parse_excel_date($row['K'] ?? null),
+                self::parse_excel_date($row['L'] ?? null)
+            );
+            if ($availability !== '') {
+                $moduledata['availability'] = $availability;
+                $moduledata['availabilityconditionsjson'] = $availability;
+            }
+
+            $completiondata = self::build_completion(
+                ((string) ($row['G'] ?? '0')) === '1',
+                strtolower(trim((string) ($row['M'] ?? ''))),
+                (int) ($row['N'] ?? 0),
+                $modname
+            );
 
             draft_repository::add_or_update_activity(
                 $sectionmap[$sectionnumber],
@@ -176,6 +221,110 @@ class template_parser {
                 $moduledata,
                 $completiondata
             );
+        }
+
+        return array_values(array_unique($usedcompetencies));
+    }
+
+    /**
+     * Split a comma/semicolon separated cell into trimmed, non-empty values.
+     *
+     * @param string $value
+     * @return string[]
+     */
+    private static function split_list(string $value): array {
+        $parts = preg_split('/[,;]/', $value);
+        return array_values(array_filter(array_map('trim', $parts), function ($part) {
+            return $part !== '';
+        }));
+    }
+
+    /**
+     * Look up competencies by short name or ID number. Names that can't be
+     * found are skipped with a warning shown on the preview screen.
+     *
+     * @param string[] $names
+     * @param array $warnings collects warnings
+     * @return int[] competency ids
+     */
+    private static function resolve_competencies(array $names, array &$warnings): array {
+        if (!$names) {
+            return [];
+        }
+        if (!\core_competency\api::is_enabled()) {
+            $warnings[] = get_string('excel:warning:competenciesdisabled', 'tool_bulkcoursestudio');
+            return [];
+        }
+        $ids = [];
+        foreach ($names as $name) {
+            $competency = \core_competency\competency::get_record(['shortname' => $name]);
+            if (!$competency) {
+                $competency = \core_competency\competency::get_record(['idnumber' => $name]);
+            }
+            if ($competency) {
+                $ids[] = (int) $competency->get('id');
+            } else {
+                $warnings[] = get_string('excel:warning:competencynotfound', 'tool_bulkcoursestudio', $name);
+            }
+        }
+        return $ids;
+    }
+
+    /**
+     * Moodle's restrict-access JSON for an optional open and close date.
+     *
+     * @param int|null $from
+     * @param int|null $until
+     * @return string JSON, or '' when there is no restriction
+     */
+    private static function build_availability(?int $from, ?int $until): string {
+        $conditions = [];
+        if ($from) {
+            $conditions[] = (object) ['type' => 'date', 'd' => '>=', 't' => $from];
+        }
+        if ($until) {
+            $conditions[] = (object) ['type' => 'date', 'd' => '<', 't' => $until];
+        }
+        if (!$conditions) {
+            return '';
+        }
+        return json_encode((object) [
+            'op' => '&',
+            'c' => $conditions,
+            'showc' => array_fill(0, count($conditions), true),
+        ]);
+    }
+
+    /**
+     * Completion settings from the 'completion' column (falls back to the
+     * older completion_view column when it is blank).
+     *
+     * @param bool $legacyview the older completion_view column was 1
+     * @param string $mode none|manual|view|minseconds|''
+     * @param int $minseconds
+     * @param string $modname
+     * @return array
+     */
+    private static function build_completion(bool $legacyview, string $mode, int $minseconds, string $modname): array {
+        if ($mode === '') {
+            $mode = $legacyview ? 'view' : '';
+        }
+        switch ($mode) {
+            case 'none':
+                return ['completion' => 0, 'completionview' => 0];
+            case 'manual':
+                return ['completion' => 1, 'completionview' => 0];
+            case 'view':
+                return ['completion' => 2, 'completionview' => 1];
+            case 'minseconds':
+                $data = ['completion' => 2, 'completionview' => 1];
+                if ($modname === 'bulkcoursestudio' && $minseconds > 0) {
+                    $data['completionminsecondsenabled'] = 1;
+                    $data['completionminseconds'] = $minseconds;
+                }
+                return $data;
+            default:
+                return ['completionview' => 0];
         }
     }
 

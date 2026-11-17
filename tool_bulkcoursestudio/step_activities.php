@@ -57,24 +57,79 @@ if ($removeid) {
     if (!in_array((int) $activity->sectionid, array_map('intval', $sectionids), true)) {
         throw new moodle_exception('invalidrecord', 'error');
     }
-    if ($confirm) {
+    // Deleting something already created in the course also removes learner
+    // data, so it needs the same permission core-style deletes use here.
+    $candelete = empty($activity->committedcmid)
+        || has_capability('tool/bulkcoursestudio:deletewithdata', context_system::instance());
+
+    $choice = optional_param('choice', '', PARAM_ALPHA);
+    if ($choice === 'hide') {
+        require_sesskey();
+        draft_repository::set_activity_visibility($removeid, false);
+        redirect($thisurl, get_string('activityhidden', 'tool_bulkcoursestudio'), null, \core\output\notification::NOTIFY_SUCCESS);
+    } else if ($choice === 'delete' && $candelete) {
         require_sesskey();
         draft_repository::delete_activity($removeid);
         redirect($thisurl, get_string('activityremoved', 'tool_bulkcoursestudio'), null, \core\output\notification::NOTIFY_SUCCESS);
     }
+
+    // Hide / delete / cancel, as the spec asks.
     echo $OUTPUT->header();
-    echo $OUTPUT->confirm(
-        get_string('removeactivityconfirm', 'tool_bulkcoursestudio', format_string($activity->name)),
-        new single_button(
-            new moodle_url($thisurl, ['remove' => $removeid, 'confirm' => 1, 'sesskey' => sesskey()]),
-            get_string('removeactivity', 'tool_bulkcoursestudio'),
-            'post',
-            single_button::BUTTON_DANGER
-        ),
-        $thisurl
+    echo ui::begin(
+        'activities',
+        $buildid,
+        get_string('removeactivity', 'tool_bulkcoursestudio'),
+        get_string('removeactivity:choose', 'tool_bulkcoursestudio', format_string($activity->name))
     );
+    echo html_writer::div(
+        html_writer::tag('strong', get_string('removeactivity:hide', 'tool_bulkcoursestudio'))
+        . html_writer::div(get_string('removeactivity:hidehelp', 'tool_bulkcoursestudio'), 'text-muted small mb-2')
+        . $OUTPUT->single_button(
+            new moodle_url($thisurl, ['remove' => $removeid, 'choice' => 'hide', 'sesskey' => sesskey()]),
+            get_string('hideactivity', 'tool_bulkcoursestudio'),
+            'post',
+            single_button::BUTTON_PRIMARY
+        ),
+        'mb-4'
+    );
+    if ($candelete) {
+        echo html_writer::div(
+            html_writer::tag('strong', get_string('removeactivity:delete', 'tool_bulkcoursestudio'))
+            . html_writer::div(get_string('removeactivity:deletehelp', 'tool_bulkcoursestudio'), 'text-muted small mb-2')
+            . $OUTPUT->single_button(
+                new moodle_url($thisurl, ['remove' => $removeid, 'choice' => 'delete', 'sesskey' => sesskey()]),
+                get_string('removeactivity', 'tool_bulkcoursestudio'),
+                'post',
+                single_button::BUTTON_DANGER
+            ),
+            'mb-4'
+        );
+    }
+    echo html_writer::div(
+        html_writer::link($thisurl, get_string('cancel'), ['class' => 'btn btn-secondary']),
+        'bcs-footer'
+    );
+    echo ui::end();
     echo $OUTPUT->footer();
     exit;
+}
+
+// Quick show/hide toggle from the activity list.
+$toggleid = optional_param('toggle', 0, PARAM_INT);
+if ($toggleid) {
+    require_sesskey();
+    $toggled = $DB->get_record('tool_bulkcoursestudio_activity', ['id' => $toggleid], '*', MUST_EXIST);
+    if (!in_array((int) $toggled->sectionid, array_map('intval', $sectionids), true)) {
+        throw new moodle_exception('invalidrecord', 'error');
+    }
+    $nowhidden = draft_repository::is_activity_hidden($toggled);
+    draft_repository::set_activity_visibility($toggleid, $nowhidden);
+    redirect(
+        $thisurl,
+        get_string($nowhidden ? 'activityshown' : 'activityhidden', 'tool_bulkcoursestudio'),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
 echo $OUTPUT->header();
@@ -179,11 +234,18 @@ foreach ($sections as $section) {
         ]);
         echo html_writer::start_div('bcs-activity');
         echo html_writer::span($icon, 'bcs-activity-icon');
+        $hidden = draft_repository::is_activity_hidden($activity);
         echo html_writer::span(
-            format_string($activity->name) . html_writer::span(s($typename), 'bcs-badge'),
-            'bcs-activity-name'
+            format_string($activity->name) . html_writer::span(s($typename), 'bcs-badge')
+            . ($hidden ? html_writer::span(get_string('hiddenbadge', 'tool_bulkcoursestudio'), 'bcs-badge') : ''),
+            'bcs-activity-name' . ($hidden ? ' text-muted' : '')
         );
         echo html_writer::link($editurl, get_string('edit'), ['class' => 'btn btn-secondary btn-sm']);
+        echo html_writer::link(
+            new moodle_url($thisurl, ['toggle' => $activity->id, 'sesskey' => sesskey()]),
+            get_string($hidden ? 'showactivity' : 'hideactivity', 'tool_bulkcoursestudio'),
+            ['class' => 'btn btn-secondary btn-sm']
+        );
         echo html_writer::link(
             new moodle_url($thisurl, ['remove' => $activity->id]),
             get_string('removeactivity', 'tool_bulkcoursestudio'),

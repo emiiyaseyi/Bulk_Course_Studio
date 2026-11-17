@@ -183,3 +183,17 @@ $string['sectionslist'] = 'Your sections';
 $string['nosectionsyet'] = 'No sections yet. Add the first one below.';
 $string['nocompetencies'] = 'No competencies selected';
 $string['activitysettings:sub'] = 'These are the same settings you would see when adding this activity inside a course.';
+
+// Added in v1.2: Excel import extras, hide-instead-of-delete.
+$string['excel:warning:competencynotfound'] = 'Competency "{$a}" from the Excel file was not found and was skipped.';
+$string['excel:warning:competenciesdisabled'] = 'The Excel file lists competencies, but the competencies feature is switched off on this site, so they were skipped.';
+$string['hideactivity'] = 'Hide';
+$string['showactivity'] = 'Show';
+$string['hiddenbadge'] = 'Hidden';
+$string['removeactivity:choose'] = 'What would you like to do with "{$a}"?';
+$string['removeactivity:hide'] = 'Hide it from learners (recommended)';
+$string['removeactivity:hidehelp'] = 'The activity stays in the course, so learner data is kept, but learners cannot see it.';
+$string['removeactivity:delete'] = 'Delete it permanently';
+$string['removeactivity:deletehelp'] = 'Removes the activity and any learner data attached to it. This cannot be undone.';
+$string['activityhidden'] = 'The activity is now hidden from learners.';
+$string['activityshown'] = 'The activity is now visible to learners.';

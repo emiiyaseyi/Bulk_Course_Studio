@@ -44,6 +44,9 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
     /** @var string[] Video file types accepted for upload. */
     const VIDEO_TYPES = ['.mp4', '.webm', '.m4v', '.mov', '.3gp'];
 
+    /** @var int Largest uploaded video allowed: 100 MB. Longer videos should be linked instead. */
+    const MAX_VIDEO_BYTES = 104857600;
+
     /**
      * Build the form fields.
      */
@@ -70,12 +73,20 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
         $mform->addElement('static', 'embedurlnotice', '', get_string('embednotice:sharingrequired', 'mod_bulkcoursestudio'));
         $mform->hideIf('embedurlnotice', 'mediasource', 'neq', 'url');
 
-        $mform->addElement('static', 'uploadnotice', '', get_string('mediasource:uploadnotice', 'mod_bulkcoursestudio'));
+        $maxmb = display_size(self::MAX_VIDEO_BYTES);
+        $mform->addElement(
+            'static',
+            'uploadnotice',
+            '',
+            html_writer::div(get_string('mediasource:uploadinfo', 'mod_bulkcoursestudio', $maxmb))
+            . html_writer::div('⚠️ ' . get_string('mediasource:uploadwarning', 'mod_bulkcoursestudio', $maxmb), 'text-danger')
+        );
         $mform->hideIf('uploadnotice', 'mediasource', 'neq', 'upload');
 
         $mform->addElement('filemanager', 'mediafile', get_string('mediafile', 'mod_bulkcoursestudio'), null, [
             'subdirs' => 0,
             'maxfiles' => 1,
+            'maxbytes' => self::MAX_VIDEO_BYTES,
             'accepted_types' => self::VIDEO_TYPES,
         ]);
         $mform->hideIf('mediafile', 'mediasource', 'neq', 'upload');
@@ -133,6 +144,13 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
             $info = file_get_draft_area_info($data['mediafile']);
             if (empty($info['filecount'])) {
                 $errors['mediafile'] = get_string('mediafilerequired', 'mod_bulkcoursestudio');
+            } else if (!empty($info['filesize']) && $info['filesize'] > self::MAX_VIDEO_BYTES) {
+                // Server-side backstop: the file picker limit alone can be bypassed.
+                $errors['mediafile'] = get_string(
+                    'mediafiletoolarge',
+                    'mod_bulkcoursestudio',
+                    display_size(self::MAX_VIDEO_BYTES)
+                );
             }
         } else if (empty($data['embedurl'])) {
             $errors['embedurl'] = get_string('required');
