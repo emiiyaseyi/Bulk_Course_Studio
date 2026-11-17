@@ -165,6 +165,15 @@ class build_manager {
                 }
 
                 $basicdata = json_decode($activity->moduledata, true) ?? [];
+                if (!empty($basicdata['_error'])) {
+                    $issue('errors', get_string(
+                        'preview:error:activityfailed',
+                        'tool_bulkcoursestudio',
+                        (object) ['section' => $section->name, 'activity' => $activity->name, 'reason' => $basicdata['_error']]
+                    ), $fix('step_activity_settings.php', [
+                        'sectionid' => $section->id, 'modname' => $activity->modname, 'activityid' => $activity->id,
+                    ]));
+                }
                 if (!empty($basicdata['_excelbasic'])) {
                     // Came from Excel with no real settings yet (see template_parser).
                     $issue('warnings', get_string(
@@ -318,6 +327,7 @@ class build_manager {
         $modinfo = get_fast_modinfo($course);
 
         $sectionnum = 1;
+        $pendingactivities = [];
         foreach ($sections as $section) {
             $sectiondata = (object) [
                 'name' => $section->name,
@@ -333,7 +343,7 @@ class build_manager {
             );
 
             foreach ($activities as $activity) {
-                self::commit_activity($course, $sectionnum, $activity);
+                $pendingactivities[] = [$sectionnum, $activity];
             }
 
             $sectionnum++;
@@ -347,7 +357,50 @@ class build_manager {
 
         $transaction->allow_commit();
 
+        // Each activity is created in its own transaction, so one that cannot
+        // be created (for example a type that needs settings it was never
+        // given) is reported on the preview instead of cancelling the whole build.
+        foreach ($pendingactivities as [$activitysection, $pendingactivity]) {
+            self::commit_activity_safely($course, $activitysection, $pendingactivity);
+        }
+
         return $course->id;
+    }
+
+    /**
+     * Create or update one activity, isolating any failure to that activity.
+     * Activities flagged as needing setup (imported from Excel for a type that
+     * cannot be built from a row) are skipped until the admin saves their settings.
+     *
+     * @param \stdClass $course
+     * @param int $sectionnum
+     * @param \stdClass $activity draft activity row
+     */
+    private static function commit_activity_safely(\stdClass $course, int $sectionnum, \stdClass $activity): void {
+        global $DB;
+
+        $moduledata = json_decode($activity->moduledata ?? '{}', true) ?? [];
+        if (!empty($moduledata['_excelbasic'])) {
+            return;
+        }
+
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            self::commit_activity($course, $sectionnum, $activity);
+            $transaction->allow_commit();
+            if (isset($moduledata['_error'])) {
+                unset($moduledata['_error']);
+                $DB->set_field('tool_bulkcoursestudio_activity', 'moduledata', json_encode($moduledata), ['id' => $activity->id]);
+            }
+        } catch (\Throwable $e) {
+            try {
+                $transaction->rollback($e);
+            } catch (\Throwable $ignored) {
+                // The rollback rethrows the original problem; it is recorded below.
+            }
+            $moduledata['_error'] = \core_text::substr(trim($e->getMessage()), 0, 300);
+            $DB->set_field('tool_bulkcoursestudio_activity', 'moduledata', json_encode($moduledata), ['id' => $activity->id]);
+        }
     }
 
     /**
@@ -391,6 +444,8 @@ class build_manager {
         $moduledata->course = $course->id;
         $moduledata->section = $sectionnum;
         $moduledata->name = $activity->name;
+        // Bookkeeping keys of this plugin, not module settings.
+        unset($moduledata->_error, $moduledata->_excelbasic);
 
         $completiondata = json_decode($activity->completiondata ?? '{}', true) ?? [];
         foreach ($completiondata as $key => $value) {

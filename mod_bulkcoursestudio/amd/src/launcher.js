@@ -64,6 +64,14 @@ define([
      *                        resume (seconds), nexturl, nextname, autonext
      */
     var init = function(config) {
+        if (config.display === 'inline') {
+            var host = document.querySelector('[data-bulkcoursestudio-inline="' + config.cmid + '"]');
+            if (host) {
+                var stop = mount($(host), config);
+                window.addEventListener('pagehide', stop);
+            }
+            return;
+        }
         var button = document.querySelector('[data-bulkcoursestudio-launch="' + config.cmid + '"]');
         if (!button) {
             return;
@@ -311,6 +319,83 @@ define([
     };
 
     /**
+     * Put the player into a container and start tracking. Used for both the
+     * on-page player and the pop-up.
+     *
+     * @param {jQuery} $host element to fill
+     * @param {Object} config
+     * @return {Function} call to stop tracking and send the final progress
+     */
+    var mount = function($host, config) {
+        if (!config.src) {
+            $host.text(config.strings.unresolvable);
+            return function() {
+                return null;
+            };
+        }
+
+        var src = config.src;
+        var isVideo = config.type === 'video';
+        if (!isVideo && config.provider === 'youtube') {
+            src += (src.indexOf('?') < 0 ? '?' : '&') + 'enablejsapi=1&origin=' + encodeURIComponent(window.location.origin);
+        }
+        var safeSrc = escapeHtmlAttribute(src);
+        var autoplay = config.display === 'inline' ? '' : ' autoplay';
+
+        $host.html(isVideo ?
+            '<video controls' + autoplay + ' playsinline src="' + safeSrc + '" ' +
+            'style="width:100%;max-height:75vh;background:#000;"></video>' :
+            '<div class="bulkcoursestudio-embed-wrap" style="position:relative;padding-top:56.25%;">' +
+            '<iframe src="' + safeSrc + '" allow="autoplay; fullscreen; encrypted-media" allowfullscreen ' +
+            'style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"></iframe></div>');
+
+        var tracker = createTracker(config);
+        var cleanup = null;
+        var clock = null;
+        var stopped = false;
+        var onEnded = function() {
+            showNext(config, $host);
+        };
+
+        if (isVideo && config.fallbacksrc) {
+            // Streaming from Google Drive can be refused (quota, sharing).
+            // Fall back to the normal preview, keeping the time-based rule.
+            $host.find('video').on('error', function() {
+                tracker.state.enabled = !!config.timed;
+                $host.html('<div class="bulkcoursestudio-embed-wrap" style="position:relative;padding-top:56.25%;">' +
+                    '<iframe src="' + escapeHtmlAttribute(config.fallbacksrc) + '" allow="autoplay; fullscreen" allowfullscreen ' +
+                    'style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"></iframe></div>');
+            });
+        }
+
+        if (config.tracked) {
+            if (isVideo) {
+                trackHtml5($host.find('video')[0], config, tracker, onEnded);
+            } else {
+                cleanup = trackIframe($host.find('iframe')[0], config, tracker, onEnded);
+            }
+        }
+
+        if (tracker.state.enabled) {
+            clock = setInterval(tracker.tick, 1000);
+        }
+
+        return function() {
+            if (stopped) {
+                return;
+            }
+            stopped = true;
+            if (clock) {
+                clearInterval(clock);
+            }
+            if (cleanup) {
+                cleanup();
+            }
+            tracker.send();
+        };
+    };
+
+    /**
      * Open the pop-up player.
      *
      * @param {Object} config
@@ -321,68 +406,17 @@ define([
             return;
         }
 
-        var src = config.src;
-        var isVideo = config.type === 'video';
-        if (!isVideo && config.provider === 'youtube') {
-            src += (src.indexOf('?') < 0 ? '?' : '&') + 'enablejsapi=1&origin=' + encodeURIComponent(window.location.origin);
-        }
-        var safeSrc = escapeHtmlAttribute(src);
-
-        var body = isVideo ?
-            '<video controls autoplay playsinline src="' + safeSrc + '" ' +
-            'style="width:100%;max-height:75vh;background:#000;"></video>' :
-            '<div class="bulkcoursestudio-embed-wrap" style="position:relative;padding-top:56.25%;">' +
-            '<iframe src="' + safeSrc + '" allow="autoplay; fullscreen; encrypted-media" allowfullscreen ' +
-            'style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"></iframe></div>';
-
-        var tracker = createTracker(config);
-        var cleanup = null;
-        var clock = null;
-
         ModalFactory.create({
             type: ModalFactory.types.DEFAULT,
             large: true,
-            body: body,
+            body: '<div class="bulkcoursestudio-host"></div>',
         }).then(function(modal) {
             var root = modal.getRoot();
-            var modalBody = root.find('.modal-body');
-            var onEnded = function() {
-                showNext(config, modalBody);
-            };
-
-            if (isVideo && config.fallbacksrc) {
-                // Streaming from Google Drive can be refused (quota, sharing).
-                // Fall back to the normal preview, keeping the time-based rule.
-                root.find('video').on('error', function() {
-                    tracker.state.enabled = !!config.timed;
-                    modalBody.html('<div class="bulkcoursestudio-embed-wrap" style="position:relative;padding-top:56.25%;">' +
-                        '<iframe src="' + escapeHtmlAttribute(config.fallbacksrc) + '" allow="autoplay; fullscreen" allowfullscreen ' +
-                        'style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"></iframe></div>');
-                });
-            }
-
-            if (config.tracked) {
-                if (isVideo) {
-                    trackHtml5(root.find('video')[0], config, tracker, onEnded);
-                } else {
-                    cleanup = trackIframe(root.find('iframe')[0], config, tracker, onEnded);
-                }
-            }
-
+            var stop = mount(root.find('.bulkcoursestudio-host'), config);
             modal.show();
 
-            if (tracker.state.enabled) {
-                clock = setInterval(tracker.tick, 1000);
-            }
-
             root.on(ModalEvents.hidden, function() {
-                if (clock) {
-                    clearInterval(clock);
-                }
-                if (cleanup) {
-                    cleanup();
-                }
-                tracker.send();
+                stop();
                 modal.destroy();
             });
 

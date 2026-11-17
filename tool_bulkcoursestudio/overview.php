@@ -48,6 +48,11 @@ $str = function (string $key, $a = null): string {
 
 echo $OUTPUT->header();
 echo html_writer::start_div('bcs bcs-overview');
+echo html_writer::link(
+    new moodle_url($base . 'index.php'),
+    '← ' . $str('back'),
+    ['class' => 'bcs-back']
+);
 
 // Hero banner.
 echo html_writer::start_div('bcs-ov-hero');

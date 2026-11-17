@@ -95,16 +95,37 @@ if (empty($builds)) {
                 ['class' => 'btn btn-secondary btn-sm']
             );
         }
-        $actions .= ' ' . html_writer::link(
-            new moodle_url('/admin/tool/bulkcoursestudio/discard_build.php', ['buildid' => $build->id]),
-            get_string('discardbuild', 'tool_bulkcoursestudio'),
-            ['class' => 'btn btn-outline-danger btn-sm']
-        );
+        // Hide/show and delete act on the real course behind this build.
+        $coursevisible = !empty($build->courseid)
+            ? $DB->get_field('course', 'visible', ['id' => $build->courseid], IGNORE_MISSING) : false;
+        $coursehidden = false;
+        if ($coursevisible !== false) {
+            $coursehidden = !$coursevisible;
+            $actions .= ' ' . html_writer::link(
+                new moodle_url('/admin/tool/bulkcoursestudio/course_action.php', [
+                    'buildid' => $build->id, 'action' => $coursehidden ? 'show' : 'hide', 'sesskey' => sesskey(),
+                ]),
+                get_string($coursehidden ? 'showcourse' : 'hidecourse', 'tool_bulkcoursestudio'),
+                ['class' => 'btn btn-secondary btn-sm']
+            );
+            $actions .= ' ' . html_writer::link(
+                new moodle_url('/admin/tool/bulkcoursestudio/course_action.php', ['buildid' => $build->id, 'action' => 'delete']),
+                get_string('deletecourse', 'tool_bulkcoursestudio'),
+                ['class' => 'btn btn-outline-danger btn-sm']
+            );
+        } else {
+            $actions .= ' ' . html_writer::link(
+                new moodle_url('/admin/tool/bulkcoursestudio/discard_build.php', ['buildid' => $build->id]),
+                get_string('discardbuild', 'tool_bulkcoursestudio'),
+                ['class' => 'btn btn-outline-danger btn-sm']
+            );
+        }
 
         echo html_writer::div(
             html_writer::span(
                 format_string($coursedata['fullname'] ?? '(untitled)')
                 . html_writer::span(s($status), 'bcs-badge')
+                . ($coursehidden ? html_writer::span(get_string('hiddenbadge', 'tool_bulkcoursestudio'), 'bcs-badge bcs-badge-warn') : '')
                 . html_writer::div(
                     get_string('lastmodified') . ': ' . userdate($build->timemodified),
                     'text-muted small fw-normal font-weight-normal'

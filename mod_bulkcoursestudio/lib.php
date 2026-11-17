@@ -101,6 +101,7 @@ function bulkcoursestudio_prepare_media_fields(stdClass $data): void {
     $data->completionpercent = (int) ($data->completionpercent ?? 0);
     $data->completiontimespent = (int) ($data->completiontimespent ?? 0);
     $data->autonext = empty($data->autonext) ? 0 : 1;
+    $data->displaymode = (($data->displaymode ?? 'inline') === 'popup') ? 'popup' : 'inline';
 }
 
 /**

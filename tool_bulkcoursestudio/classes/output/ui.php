@@ -47,10 +47,24 @@ class ui {
      * @param int $buildid
      * @param string $title
      * @param string $subtitle
+     * @param \moodle_url|null $back where the Back link goes (none when null)
      * @return string HTML
      */
-    public static function begin(string $stepkey, int $buildid, string $title, string $subtitle = ''): string {
+    public static function begin(
+        string $stepkey,
+        int $buildid,
+        string $title,
+        string $subtitle = '',
+        ?\moodle_url $back = null
+    ): string {
         $html = \html_writer::start_div('bcs');
+        if ($back) {
+            $html .= \html_writer::link(
+                $back,
+                '← ' . get_string('back', 'tool_bulkcoursestudio'),
+                ['class' => 'bcs-back']
+            );
+        }
         if ($stepkey !== '') {
             $html .= self::stepper($stepkey, $buildid);
         }

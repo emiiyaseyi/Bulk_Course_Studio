@@ -128,7 +128,7 @@ if ($form->is_cancelled()) {
 }
 
 echo $OUTPUT->header();
-echo ui::begin('', (int) $buildid, get_string('step:matchfiles', 'tool_bulkcoursestudio'));
+echo ui::begin('', (int) $buildid, get_string('step:matchfiles', 'tool_bulkcoursestudio'), '', new moodle_url('/admin/tool/bulkcoursestudio/excel_upload.php'));
 echo $OUTPUT->notification(get_string('matchfiles:info', 'tool_bulkcoursestudio'), 'info');
 
 $table = new html_table();

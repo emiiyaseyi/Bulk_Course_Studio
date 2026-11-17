@@ -46,7 +46,7 @@ $preview = build_manager::preview($buildid);
 
 echo $OUTPUT->header();
 echo ui::begin('preview', (int) $buildid, get_string('step:preview', 'tool_bulkcoursestudio'),
-    get_string('stepsub:preview', 'tool_bulkcoursestudio'));
+    get_string('stepsub:preview', 'tool_bulkcoursestudio'), new moodle_url('/admin/tool/bulkcoursestudio/step_activities.php', ['buildid' => $buildid]));
 
 $renderissue = function (string $type, string $level) use ($preview, $OUTPUT) {
     foreach ($preview->{$type} as $index => $message) {

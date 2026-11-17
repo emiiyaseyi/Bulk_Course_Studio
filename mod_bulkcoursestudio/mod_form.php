@@ -100,6 +100,12 @@ class mod_bulkcoursestudio_mod_form extends moodleform_mod {
         ]);
         $mform->hideIf('mediafile', 'mediasource', 'neq', 'upload');
 
+        $mform->addElement('select', 'displaymode', get_string('displaymode', 'mod_bulkcoursestudio'), [
+            'inline' => get_string('displaymode:inline', 'mod_bulkcoursestudio'),
+            'popup' => get_string('displaymode:popup', 'mod_bulkcoursestudio'),
+        ]);
+        $mform->setDefault('displaymode', 'inline');
+
         $mform->addElement('advcheckbox', 'autonext', get_string('autonext', 'mod_bulkcoursestudio'));
         $mform->addHelpButton('autonext', 'autonext', 'mod_bulkcoursestudio');
         $mform->setDefault('autonext', 1);

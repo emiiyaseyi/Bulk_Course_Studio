@@ -121,7 +121,7 @@ $sections = draft_repository::get_sections($buildid);
 
 echo $OUTPUT->header();
 echo ui::begin('sections', (int) $buildid, get_string('step:sections', 'tool_bulkcoursestudio'),
-    get_string('stepsub:sections', 'tool_bulkcoursestudio'));
+    get_string('stepsub:sections', 'tool_bulkcoursestudio'), new moodle_url('/admin/tool/bulkcoursestudio/step_format.php', ['buildid' => $buildid]));
 
 // How many sections? One box, one button.
 echo html_writer::start_div('bcs-section');

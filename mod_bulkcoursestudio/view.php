@@ -115,8 +115,8 @@ if (!empty($instance->autonext)) {
     $position = array_search($cm->id, $ordered);
     if ($position !== false) {
         foreach (array_slice($ordered, $position + 1) as $nextcmid) {
-            $nextcm = $modinfo->get_cm($nextcmid);
-            if ($nextcm->uservisible && $nextcm->url) {
+            $nextcm = $modinfo->cms[$nextcmid] ?? null;
+            if ($nextcm && $nextcm->uservisible && $nextcm->url) {
                 $nexturl = $nextcm->url->out(false);
                 $nextname = $nextcm->get_formatted_name();
                 break;
@@ -133,6 +133,7 @@ $PAGE->requires->js_call_amd('mod_bulkcoursestudio/launcher', 'init', [[
     'timed' => (int) $instance->completiontimespent > 0,
     'tracked' => $mediatype === 'video' || in_array($provider, ['youtube', 'vimeo'], true),
     'fallbacksrc' => $fallbacksrc,
+    'display' => ($instance->displaymode ?? 'inline') === 'popup' ? 'popup' : 'inline',
     'resume' => $progress ? (int) $progress->currenttime : 0,
     'autonext' => !empty($instance->autonext),
     'nexturl' => $nexturl,
@@ -156,8 +157,13 @@ if ($embedsrc === '') {
         echo $OUTPUT->notification($sharingnotice, 'info');
     }
 
+    $inline = ($instance->displaymode ?? 'inline') !== 'popup';
+    if ($inline) {
+        // The player sits on the page itself; the script fills this in.
+        echo html_writer::div('', 'bulkcoursestudio-inline mb-3', ['data-bulkcoursestudio-inline' => $cm->id]);
+    }
     echo html_writer::start_div('mb-3');
-    echo html_writer::tag(
+    echo $inline ? '' : html_writer::tag(
         'button',
         get_string($progress && $progress->currenttime > 3 ? 'resumevideo' : 'openembed', 'mod_bulkcoursestudio'),
         [

@@ -173,7 +173,8 @@ if ($choosesection) {
         'activities',
         $buildid,
         get_string('chooseactivitytype', 'tool_bulkcoursestudio'),
-        get_string('chooseactivitytype:sub', 'tool_bulkcoursestudio', format_string($section->name))
+        get_string('chooseactivitytype:sub', 'tool_bulkcoursestudio', format_string($section->name)),
+        $thisurl
     );
 
     $types = native_form_registry::get_addable_types((int) $build->courseid);
@@ -218,7 +219,8 @@ echo ui::begin(
     'activities',
     $buildid,
     get_string('step:activities', 'tool_bulkcoursestudio'),
-    get_string('stepsub:activities', 'tool_bulkcoursestudio')
+    get_string('stepsub:activities', 'tool_bulkcoursestudio'),
+    new moodle_url('/admin/tool/bulkcoursestudio/step_sections.php', ['buildid' => $buildid])
 );
 
 if (empty($sections)) {
@@ -261,6 +263,11 @@ foreach ($sections as $section) {
         echo html_writer::start_div('bcs-activity');
         echo html_writer::span($icon, 'bcs-activity-icon');
         $hidden = draft_repository::is_activity_hidden($activity);
+        $drafted = json_decode($activity->moduledata, true) ?? [];
+        $statusbadge = !empty($drafted['_error'])
+            ? html_writer::span(get_string('failedbadge', 'tool_bulkcoursestudio'), 'bcs-badge bcs-badge-bad')
+            : (!empty($drafted['_excelbasic'])
+                ? html_writer::span(get_string('needssetup', 'tool_bulkcoursestudio'), 'bcs-badge bcs-badge-warn') : '');
         if ($renameid == $activity->id) {
             // The rename form sits inside the row opened above, beside the icon.
             echo html_writer::start_tag('form', ['method' => 'post', 'action' => $thisurl->out(false), 'class' => 'd-flex flex-grow-1', 'style' => 'gap:.5rem;']);
@@ -278,7 +285,8 @@ foreach ($sections as $section) {
         }
         echo html_writer::span(
             format_string($activity->name) . html_writer::span(s($typename), 'bcs-badge')
-            . ($hidden ? html_writer::span(get_string('hiddenbadge', 'tool_bulkcoursestudio'), 'bcs-badge') : ''),
+            . ($hidden ? html_writer::span(get_string('hiddenbadge', 'tool_bulkcoursestudio'), 'bcs-badge') : '')
+            . $statusbadge,
             'bcs-activity-name' . ($hidden ? ' text-muted' : '')
         );
         echo html_writer::link($editurl, get_string('edit'), ['class' => 'btn btn-secondary btn-sm']);

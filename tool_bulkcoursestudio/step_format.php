@@ -54,7 +54,7 @@ if ($form->is_cancelled()) {
 
 echo $OUTPUT->header();
 echo ui::begin('format', (int) $buildid, get_string('step:format', 'tool_bulkcoursestudio'),
-    get_string('stepsub:format', 'tool_bulkcoursestudio'));
+    get_string('stepsub:format', 'tool_bulkcoursestudio'), new moodle_url('/admin/tool/bulkcoursestudio/step_coursedetails.php', ['buildid' => $buildid]));
 $form->display();
 echo ui::end();
 echo $OUTPUT->footer();

@@ -31,6 +31,7 @@ require_once($CFG->libdir . '/adminlib.php');
 
 use tool_bulkcoursestudio\form\excel_upload_form;
 use tool_bulkcoursestudio\excel\template_parser;
+use tool_bulkcoursestudio\output\ui;
 
 admin_externalpage_setup('tool_bulkcoursestudio', '', null, '', ['pagelayout' => 'admin']);
 require_capability('tool/bulkcoursestudio:bulkupload', context_system::instance());
@@ -63,8 +64,23 @@ if ($form->is_cancelled()) {
 }
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('uploadtemplate', 'tool_bulkcoursestudio'));
+echo ui::begin('', 0, get_string('uploadtemplate', 'tool_bulkcoursestudio'), get_string('uploadtemplate:desc', 'tool_bulkcoursestudio'),
+    new moodle_url('/admin/tool/bulkcoursestudio/index.php'));
 echo $OUTPUT->notification(get_string('excel:filematchinfo', 'tool_bulkcoursestudio'), 'info');
 echo $OUTPUT->notification(get_string('excel:supportinfo', 'tool_bulkcoursestudio'), 'info');
+echo html_writer::tag('h3', get_string('excel:guide', 'tool_bulkcoursestudio'), ['class' => 'bcs-subhead']);
+echo html_writer::start_tag('table', ['class' => 'bcs-guide']);
+echo html_writer::tag('tr', html_writer::tag('th', get_string('excel:guide:sheet', 'tool_bulkcoursestudio'))
+    . html_writer::tag('th', get_string('excel:guide:column', 'tool_bulkcoursestudio'))
+    . html_writer::tag('th', get_string('excel:guide:what', 'tool_bulkcoursestudio'))
+    . html_writer::tag('th', get_string('excel:guide:values', 'tool_bulkcoursestudio')));
+foreach (\tool_bulkcoursestudio\excel\template_generator::column_guide() as $guideline) {
+    echo html_writer::tag('tr', implode('', array_map(function ($cell) {
+        return html_writer::tag('td', s($cell));
+    }, $guideline)));
+}
+echo html_writer::end_tag('table');
+
 $form->display();
+echo ui::end();
 echo $OUTPUT->footer();

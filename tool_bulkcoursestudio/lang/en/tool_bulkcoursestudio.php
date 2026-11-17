@@ -249,5 +249,23 @@ $string['renamed'] = 'Renamed.';
 
 // Added in v1.7.
 $string['fixthis'] = 'Fix this';
-$string['preview:warning:excelbasic'] = 'The {$a->modname} activity "{$a->activity}" in section "{$a->section}" was imported from Excel with default settings only. Open it to set it up properly (dates, grading, files...).';
+$string['preview:warning:excelbasic'] = 'The {$a->modname} activity "{$a->activity}" in section "{$a->section}" came from Excel and has NOT been created yet, because it needs settings a spreadsheet row cannot hold (dates, grading...). Open it and save its settings to create it.';
 $string['excel:supportinfo'] = 'Excel rows are best for simple content: Page, URL, Label, File, Folder and Bulk Course Studio videos. Other types such as Assignment, Quiz, Forum and SCORM are created with default settings only; the preview links to each one so you can set it up.';
+$string['preview:error:activityfailed'] = 'The activity "{$a->activity}" {$a->section} could not be created: {$a->reason}';
+$string['needssetup'] = 'Needs setup';
+$string['failedbadge'] = 'Failed';
+
+// Added in v1.8: hide/show/delete a course, instructions.
+$string['hidecourse'] = 'Hide course';
+$string['showcourse'] = 'Show course';
+$string['deletecourse'] = 'Delete course';
+$string['deletecourse:confirm'] = 'Delete the course "{$a}" and everything in it, including learner data? It goes to the recycle bin if your site has one. This cannot be undone from here.';
+$string['coursehidden'] = 'The course is now hidden from learners.';
+$string['courseshown'] = 'The course is now visible to learners.';
+$string['coursedeleted'] = 'The course was deleted.';
+$string['nocoursefound'] = 'That course no longer exists.';
+$string['excel:guide'] = 'What goes in each column';
+$string['excel:guide:sheet'] = 'Sheet';
+$string['excel:guide:column'] = 'Column';
+$string['excel:guide:what'] = 'What to enter';
+$string['excel:guide:values'] = 'Allowed values / example';

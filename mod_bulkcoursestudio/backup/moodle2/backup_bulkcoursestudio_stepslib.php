@@ -40,7 +40,7 @@ class backup_bulkcoursestudio_activity_structure_step extends backup_activity_st
         $userinfo = $this->get_setting_value('userinfo');
 
         $bulkcoursestudio = new backup_nested_element('bulkcoursestudio', ['id'], [
-            'name', 'intro', 'introformat', 'embedurl', 'provider', 'mediasource',
+            'name', 'intro', 'introformat', 'embedurl', 'provider', 'mediasource', 'displaymode',
             'completionview', 'completionminseconds', 'completionpercent', 'autonext', 'completiontimespent', 'timecreated', 'timemodified',
         ]);
 

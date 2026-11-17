@@ -90,5 +90,16 @@ function xmldb_bulkcoursestudio_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026111704, 'bulkcoursestudio');
     }
 
+    if ($oldversion < 2026111708) {
+        // Show the video on the page (default) or in a pop-up.
+        $table = new xmldb_table('bulkcoursestudio');
+        $field = new xmldb_field('displaymode', XMLDB_TYPE_CHAR, '6', null, XMLDB_NOTNULL, null, 'inline', 'mediasource');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026111708, 'bulkcoursestudio');
+    }
+
     return true;
 }

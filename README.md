@@ -2,7 +2,7 @@
 
 **Build complete Moodle courses in minutes, not hours.** Bulk Course Studio lets an administrator create a whole course (details, sections, activities, uploaded files and embedded videos) through a guided wizard or a single Excel upload, preview the result, and then save it, publish it, or schedule it for later.
 
-> **Status: alpha, release v1.7.** All releases are v1; the number after the dot goes up with each update (v1.1, v1.2, ...). The code is complete for the v1 scope, but it has **not yet been installed or tested on a live Moodle site**. Treat it as a test-site release until the [live-instance checklist](docs/live-instance-verification-checklist.md) has been worked through.
+> **Status: alpha, release v1.8.** All releases are v1; the number after the dot goes up with each update (v1.1, v1.2, ...). The code is complete for the v1 scope, but it has **not yet been installed or tested on a live Moodle site**. Treat it as a test-site release until the [live-instance checklist](docs/live-instance-verification-checklist.md) has been worked through.
 
 Requires **Moodle 4.5 or later**.
 
@@ -29,6 +29,8 @@ The admin tool works on its own. The activity module is optional, and is only ne
 - **Preview before commit.** Both paths share one preview and one commit engine. The engine refuses to write if the preview has errors.
 - **Save, publish or schedule.** New courses are created hidden. You can publish them immediately or schedule publishing through a Moodle scheduled task.
 - **Excel extras.** Besides the basics, the template has columns for course tags and competencies, and for each activity: visible or hidden, tags, competencies, open and close dates (restrict access), and completion (none, manual, view, percent of the video watched, or minutes on the activity).
+- **Dropdowns and instructions in the Excel template:** categories, formats, activity types, sections, Yes/No and completion type are dropdowns, and an Instructions sheet explains every column.
+- **Back buttons** on every wizard screen, and **Hide / Show / Delete course** on the dashboard.
 - **Edit existing builds.** Search committed builds and reopen them in the wizard. Re-saving updates the same activities instead of duplicating them.
 - **Discard.** Abandoning an unpublished build soft-deletes its hidden course to the recycle bin. A published course is never touched.
 - **Core APIs only.** The engine uses Moodle's own course, module, completion and file APIs. It never writes to core database tables directly, so a built course looks the same as one made by hand.
@@ -44,7 +46,7 @@ The admin tool works on its own. The activity module is optional, and is only ne
 - **Overview, Resources and Transcript tabs** on the activity page.
 - Uploaded videos are limited to **100 MB**, with a warning shown on the form; use a link for longer recordings.
 - Teachers can attach **resource files** (slides, worksheets) that students download from the activity page.
-- Shows a launch button on the course page and plays the video in a **pop-up modal**.
+- Plays the video **on the activity page** (or in a pop-up, your choice).
 - Supports **view-based completion** and the **watch-percentage** rule.
 - Includes full **backup and restore** support and the Privacy API.
 

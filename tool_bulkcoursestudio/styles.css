@@ -531,3 +531,71 @@
 .bcs-overview .bcs-ov-dev-icon {
     margin-right: 0.5rem;
 }
+
+/* ---------- v1.8: readable buttons, Back link, status badges ---------- */
+.bcs a.btn-primary,
+.bcs a.btn-primary:hover,
+.bcs a.btn-primary:focus,
+.bcs .alert a.btn-primary,
+.bcs .alert a.btn-primary:hover,
+.bcs button.btn-primary {
+    color: #fff;
+    text-decoration: none;
+}
+.bcs a.btn-secondary,
+.bcs .alert a.btn-secondary {
+    text-decoration: none;
+}
+.bcs .alert a.btn {
+    vertical-align: middle;
+    margin-left: 0.5rem;
+}
+.bcs .bcs-back {
+    display: inline-block;
+    margin-bottom: 0.75rem;
+    padding: 0.35rem 0.8rem;
+    border: 1px solid var(--bcs-border);
+    border-radius: 999px;
+    background: #fff;
+    color: inherit;
+    font-weight: 600;
+    text-decoration: none;
+}
+.bcs .bcs-back:hover {
+    border-color: var(--bcs-primary);
+    color: var(--bcs-primary);
+    text-decoration: none;
+}
+.bcs .bcs-badge-warn {
+    background: #fff4d6;
+    color: #7a5200;
+}
+.bcs .bcs-badge-bad {
+    background: #fde4e4;
+    color: #8a1c1c;
+}
+.bcs .bcs-hint {
+    color: var(--bcs-muted);
+    font-size: 0.85rem;
+}
+
+/* Excel column guide on the upload page */
+.bcs .bcs-guide {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.5rem 0 1.25rem;
+    font-size: 0.9rem;
+}
+.bcs .bcs-guide th,
+.bcs .bcs-guide td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--bcs-border);
+    vertical-align: top;
+    text-align: left;
+}
+.bcs .bcs-guide th {
+    color: var(--bcs-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}

@@ -99,8 +99,8 @@ class template_parser {
                 'summary' => (string) ($row['D'] ?? ''),
                 'format' => trim((string) ($row['E'] ?? 'topics')),
                 'startdate' => self::parse_excel_date($row['F'] ?? null) ?: time(),
-                'enddate' => self::parse_excel_date($row['G'] ?? null),
-                'enablecompletion' => ((string) ($row['H'] ?? '1')) === '1' ? 1 : 0,
+                'enddate' => self::parse_excel_date($row['G'] ?? null) ?? 0,
+                'enablecompletion' => self::yesno($row['H'] ?? null, true) ? 1 : 0,
                 'visible' => 0,
                 'tags' => self::split_list((string) ($row['I'] ?? '')),
                 'competencyids' => self::resolve_competencies(self::split_list((string) ($row['J'] ?? '')), $warnings),
@@ -192,7 +192,7 @@ class template_parser {
 
             // Extra per-activity options (columns H-N), all optional.
             if (trim((string) ($row['H'] ?? '')) !== '') {
-                $moduledata['visible'] = ((string) $row['H']) === '0' ? 0 : 1;
+                $moduledata['visible'] = self::yesno($row['H'], true) ? 1 : 0;
             }
             $tags = self::split_list((string) ($row['I'] ?? ''));
             if ($tags) {
@@ -213,7 +213,7 @@ class template_parser {
             }
 
             $completiondata = self::build_completion(
-                ((string) ($row['G'] ?? '0')) === '1',
+                self::yesno($row['G'] ?? null, false),
                 strtolower(trim((string) ($row['M'] ?? ''))),
                 (int) ($row['N'] ?? 0),
                 $modname,
@@ -267,6 +267,21 @@ class template_parser {
             default:
                 return ['_excelbasic' => 1];
         }
+    }
+
+    /**
+     * Read a Yes/No cell. Also accepts 1/0, true/false, y/n, so older files still work.
+     *
+     * @param mixed $value the cell
+     * @param bool $default used when the cell is empty
+     * @return bool
+     */
+    private static function yesno($value, bool $default): bool {
+        $text = strtolower(trim((string) $value));
+        if ($text === '') {
+            return $default;
+        }
+        return in_array($text, ['1', 'yes', 'y', 'true', 'on'], true);
     }
 
     /**

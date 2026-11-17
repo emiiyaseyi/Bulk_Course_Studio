@@ -109,3 +109,8 @@ $string['importfailed:notalink'] = 'Enter a link starting with https://.';
 $string['importfailed:unreachable'] = 'Moodle could not download from this link. Check that it opens without signing in and that the server is allowed to reach it.';
 $string['importfailed:notpublic'] = 'This link returned a web page instead of a video, usually because it asks you to sign in. Share the file as "Anyone with the link can view", or upload the video instead.';
 $string['importfailed:toolarge'] = 'This video is larger than the {$a} limit. Use a link instead, or a shorter video.';
+
+// Added in v1.8.
+$string['displaymode'] = 'Show the video';
+$string['displaymode:inline'] = 'On the page (recommended)';
+$string['displaymode:popup'] = 'In a pop-up window';

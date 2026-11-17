@@ -160,6 +160,15 @@ if ($cm) {
         file_prepare_draft_area($introdraftid, null, null, null, null, ['subdirs' => true]);
         $data->introeditor = ['text' => '', 'format' => FORMAT_HTML, 'itemid' => $introdraftid];
     }
+    // An activity already in the draft but not yet created (for example from
+    // Excel): start the form with what the row gave it.
+    if ($draftactivity) {
+        $data->name = $draftactivity->name;
+        $drafted = json_decode($draftactivity->moduledata, true) ?? [];
+        if (isset($data->introeditor) && !empty($drafted['intro'])) {
+            $data->introeditor['text'] = $drafted['intro'];
+        }
+    }
     // Advanced grading (assignment rubrics and marking guides).
     if (plugin_supports('mod', $modname, FEATURE_ADVANCED_GRADING, false)
             && has_capability('moodle/grade:managegradingforms', $context)) {
@@ -237,12 +246,26 @@ if ($mform->is_cancelled()) {
     // activity" flow.
     build_manager::sync($buildid);
 
+    // If Moodle refused to create this activity, say why right now.
+    $saved = $DB->get_record('tool_bulkcoursestudio_activity', ['id' => $savedactivityid]);
+    $savedreason = $saved ? (json_decode($saved->moduledata, true)['_error'] ?? '') : '';
+    if ($savedreason !== '') {
+        redirect(
+            new moodle_url('/admin/tool/bulkcoursestudio/step_activities.php', ['buildid' => $buildid]),
+            get_string('preview:error:activityfailed', 'tool_bulkcoursestudio', (object) [
+                'section' => '', 'activity' => $name, 'reason' => $savedreason,
+            ]),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
+    }
+
     redirect(new moodle_url('/admin/tool/bulkcoursestudio/step_activities.php', ['buildid' => $buildid]));
 }
 
 echo $OUTPUT->header();
 echo ui::begin('activities', $buildid, $moddisplayname,
-    get_string('activitysettings:sub', 'tool_bulkcoursestudio'));
+    get_string('activitysettings:sub', 'tool_bulkcoursestudio'), new moodle_url('/admin/tool/bulkcoursestudio/step_activities.php', ['buildid' => $buildid]));
 $mform->display();
 echo ui::end();
 echo $OUTPUT->footer();
